@@ -1,0 +1,16 @@
+{
+    "name": "castepinputs",
+    "author": "Bonan Zhu",
+    "author_email": "bz240@cam.ac.uk",
+    "classifiers":[
+        "Programming Language:: Python :: 2.7 :: Python :: 3.5 ::",
+        "Development Status :: 4- Beta"
+    ],
+    "description": "A general reader writer for CASTEP inputs",
+    "url": "https://gitlab.com/bz1/castepiputs",
+    "license": "MIT License",
+    "classifiers": [
+        "Programming Language :: Python"
+    ],
+    "version": "0.0.1"
+}
