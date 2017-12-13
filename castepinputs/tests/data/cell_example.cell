@@ -4,6 +4,12 @@
 kpoints_mp_grid : 1 1 1
 kpoint_mp_grid = 2 2 2 # COMMENT3
 
+%BLOCK LATTICE_CART
+4 0 0 # A simple lattice
+0 5 0
+0 0 5
+%ENDBLOCK LATTICE_CART
+
 %BLOCK POSITIONS_ABS
 O 1 1 1
 Ce 2 2 2

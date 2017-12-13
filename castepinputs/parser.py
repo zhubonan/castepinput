@@ -31,11 +31,9 @@ class BaseParser:
         """
         Parser the input file
         """
-        self._read_in()
         self._clean_up_lines()  # Remove comments, blank lines
         self._split_block_kw()  # Extract blocks from the lines
         self._parse_keywords()  # Parse the key, value pair
-        self._parse_blocks()  # Parse the blocks
 
 
     @property
@@ -45,6 +43,13 @@ class BaseParser:
             with open(self.fname) as fp:
                 self._content = fp.read()
         return self._content
+
+    @property
+    def comments(self):
+        if self._comments is None:
+            raise RuntimeError("File is not parsed")
+        else:
+            return self._comments
 
     def _clean_up_lines(self):
         """
@@ -96,10 +101,14 @@ class BaseParser:
         block_indices = {}
         in_block = False
         kwlines = []
+        start_name = None
         for i, line in enumerate(self._lines):
 
             start_match = block_start.match(line)
             if start_match:
+                if in_block is True:
+                    raise FormatError("End of block {}"
+                        " is not detected".format(start_name))
                 start = i
                 in_block = True
                 start_name = start_match.group(1).lower()
@@ -132,7 +141,7 @@ class BaseParser:
         blocks = {}
         for key, index in block_indices.items():
             lines = self._lines[index[0]+1:index[1]]
-            blocks[key] = lines
+            blocks[key.lower()] = lines
 
         self._blocks = blocks
         self._kwlines = kwlines
@@ -152,6 +161,58 @@ class BaseParser:
                 raise FormatError("Cannot parse line {} into key-value"
                     " pair".format(line))
 
-            out_dict[key] = value
+            out_dict[key.lower()] = value
         self._keywords = out_dict
         return out_dict
+
+    def get_keywords(self):
+        """Return the keywords as a dictionary"""
+        return self._keywords
+
+    def get_blocks(self):
+        """Returns the blocks as a dictionary"""
+        return self._blocks
+
+class CellParser(BaseParser):
+
+
+    def get_cell(self):
+        """Return cell vectors"""
+        if self._blocks is None:
+            self.parse()
+        cell_lines = self._blocks['lattice_cart']
+
+        cell = []
+        for l in cell_lines:
+            cell.append(int(v) for v in l.split())
+        return cell
+
+    def get_positions(self):
+        """
+        Positions of ions
+
+        :returns elements: A list of elements
+        :returns pos: A list of list of floats of the positions
+        :returns tags: A dictionary of tags e.g spin, mixture, label etc
+        """
+        if self._blocks is None:
+            self.parse()
+        pos_lines = self._blocks['positions_abs']
+
+        pos = []
+        elements = []
+        for l in pos_lines:
+            ls = l.split()
+            element = ls[0]
+            xyz = [float(a) for a in ls[1:4]]
+            # Ignore the spin and labels for now
+            pos.append(xyz)
+            elements.append(element)
+        return elements, pos
+
+
+
+class ParamParser(BaseParser):
+
+    def _split_block_kw(self):
+        self._kwlines = self._lines
