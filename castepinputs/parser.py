@@ -5,6 +5,8 @@ Module for parsing input files
 import os
 import re
 
+import numpy as np
+import castepinputs.utils as utils
 
 COMMENT_SYMBOLS = ["#", "!"]
 
@@ -20,7 +22,13 @@ class FormatError(RuntimeError):
 class BaseParser:
 
     def __init__(self, fname):
-        """Initialise an instance of the parser"""
+        """
+        Parser for cell/param files for castep.
+        May also be useful for OptaDos/CASTEPConv that shares similar
+        format.
+        Parameters:
+        :params fname: Name of the file to be parsed
+        """
         self.fname = fname
         self._lines = None
         self._content = None
@@ -34,7 +42,6 @@ class BaseParser:
         self._clean_up_lines()  # Remove comments, blank lines
         self._split_block_kw()  # Extract blocks from the lines
         self._parse_keywords()  # Parse the key, value pair
-
 
     @property
     def content(self):
@@ -123,7 +130,7 @@ class BaseParser:
                                       " found".format(end_name))
                 elif end_name != start_name:
                     raise FormatError("Mismatch block names, start: {}"
-                    "finish: {}".format(start_name, end_name))
+                    " finish: {}".format(start_name, end_name))
                 else:
                     block_indices[start_name] = (start, finish)
                     in_block = False
@@ -131,7 +138,6 @@ class BaseParser:
 
             if not in_block:
                 kwlines.append(line)
-
 
         if in_block is True:
             raise FormatError("End of block {}"
@@ -173,20 +179,53 @@ class BaseParser:
         """Returns the blocks as a dictionary"""
         return self._blocks
 
+
 class CellParser(BaseParser):
 
+    def __init__(self, fname):
+        """
+        Parser for cell files.
+        Parameters
+        ----------
+        :param fname: Path to the cell file
 
+        Usage
+        -----
+
+        parser = CellParser("cellfile.cell")
+        parser.parse()
+        kws = parser.get_keywords()
+        cell = parser.get_cell()
+        pos = parser.get_positions()
+        """
+        super(CellParser, self).__init__(fname)
+
+    # TODO: PARSE abc style
     def get_cell(self):
         """Return cell vectors"""
         if self._blocks is None:
             self.parse()
-        cell_lines = self._blocks['lattice_cart']
 
         cell = []
-        for l in cell_lines:
-            cell.append(int(v) for v in l.split())
-        return cell
+        if "lattice_cart" in self._blocks:
+            cell_lines = self._blocks['lattice_cart']
 
+            for l in cell_lines:
+                cell.append([float(v) for v in l.split()])
+
+        elif "lattice_abc" in self._blocks:
+            abc_lines = self._blocks['lattice_abc']
+
+            abc = []
+            for l in abc_lines:
+                abc.extend([float(v) for v in l.split()])
+            assert len(abc) == 6, "Problem in lattice_abc block"
+
+            cell = utils.cell_abcs_to_vec(abc)
+
+        return np.asarray(cell)
+
+    # TODO: PARSE frac style
     def get_positions(self):
         """
         Positions of ions
@@ -209,7 +248,6 @@ class CellParser(BaseParser):
             pos.append(xyz)
             elements.append(element)
         return elements, pos
-
 
 
 class ParamParser(BaseParser):
