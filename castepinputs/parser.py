@@ -200,7 +200,6 @@ class CellParser(BaseParser):
         """
         super(CellParser, self).__init__(fname)
 
-    # TODO: PARSE abc style
     def get_cell(self):
         """Return cell vectors"""
         if self._blocks is None:
@@ -242,7 +241,7 @@ class CellParser(BaseParser):
         elements = []
         for l in pos_lines:
             ls = l.split()
-            element = ls[0]
+            element = ls[0].capitalize()
             xyz = [float(a) for a in ls[1:4]]
             # Ignore the spin and labels for now
             pos.append(xyz)
@@ -251,6 +250,30 @@ class CellParser(BaseParser):
 
 
 class ParamParser(BaseParser):
+    """Parser class for PARAM files"""
+    pass
 
-    def _split_block_kw(self):
-        self._kwlines = self._lines
+def parse_pos_line(cell_line):
+    """
+    Parse a line in the cell block.
+    Need to treat LABEL, SPIN, MIXTURE properly
+    """
+    import re
+    cell_line = cell_line.strip()
+    s = re.split(" ", cell_line, maxsplit=5)
+    if len(s) < 4:
+        raise ValueError("Cannot understand line: {}".format(cell_line))
+    if len(s) == 5:
+        tags = s[-1]
+    else:
+        tags = None
+
+    elem = s[0]
+    coor = map(float, s[1:4])
+
+#    if tags is not None:
+#        # Parse the tags
+#        tags = tags.lower()  # Change to lower case
+#        if tags.find("spin=")
+    return elem, coor, tags
+
