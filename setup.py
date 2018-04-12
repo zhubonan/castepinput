@@ -7,7 +7,6 @@ if __name__ == '__main__':
         kwargs = json.load(info)
     setup(
         include_package_data=True,
-        reentry_register=True,
         packages=find_packages(),
         **kwargs
     )

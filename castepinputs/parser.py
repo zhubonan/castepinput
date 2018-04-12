@@ -1,6 +1,18 @@
 """
-Module for parsing input files
+Module for parsing castep styled inputs
+inputs may contain oneline
+
+
+STANDARDISATION
+CASTEP input does not destinguish between low and upper case, but python does.
+To stardardise data parsed. Output follows the convension
+1. all keys will be in lower case
+2. all block names will be in lower case
+3. case of the values themselves are not affected
+4. content of the blocks are not affected
 """
+from __future__ import print_function
+from __future__ import division
 
 import os
 import re
@@ -19,21 +31,32 @@ class FormatError(RuntimeError):
     pass
 
 
-class BaseParser:
+class BaseParser(object):
+    """
+    Base parser class
+    Does nothing fancy, basic text processing
+    """
 
-    def __init__(self, fname):
+    def __init__(self, lines):
         """
         Parser for cell/param files for castep.
         May also be useful for OptaDos/CASTEPConv that shares similar
         format.
         Parameters:
-        :params fname: Name of the file to be parsed
+        :params lines: A list of the file content or name of a file to be read
         """
-        self.fname = fname
-        self._lines = None
-        self._content = None
-        self._kwlines = None
-        self._blocks = None
+        if isinstance(lines, (list, tuple)):
+            self._raw_lines = lines  # Raw input lines
+        else:
+            with open(lines) as fh:
+                lin = []
+                for line in fh:
+                    lin.append(line.strip())
+            self._raw_lines = lin
+
+        self._lines = None  # Processed lines
+        self._kwlines = None  # key-value paired lines
+        self._blocks = None  # A dictionary of blocks
 
     def parse(self):
         """
@@ -45,11 +68,8 @@ class BaseParser:
 
     @property
     def content(self):
-        """Return raw string of the input file"""
-        if self._content is None:
-            with open(self.fname) as fp:
-                self._content = fp.read()
-        return self._content
+        """A list of lines as inputs for parsing"""
+        return self._raw_lines
 
     @property
     def comments(self):
@@ -66,7 +86,7 @@ class BaseParser:
         Make everything not comment in lower case
         """
 
-        lines = self.content.split("\n")
+        lines = self.content
         comments = []
         cleaned_lines = []
         for line in lines:
@@ -77,7 +97,7 @@ class BaseParser:
 
             # We first check for comment
             if line[0] in COMMENT_SYMBOLS:
-                comments.append(line[1:])
+                comments.append(line[1:].strip())
                 continue
 
             # Check if there is any trailing comments
@@ -89,7 +109,7 @@ class BaseParser:
                     break
                 else:
                     cld_line = line
-            cleaned_lines.append(cld_line.lower())
+            cleaned_lines.append(cld_line)
 
         self._lines = cleaned_lines
         self._comments = comments
@@ -97,8 +117,9 @@ class BaseParser:
 
     def _split_block_kw(self):
         """
-        Extract blocks
+        Split blocks from cleaned_up lines.
         Returns a dictionary of block names and contents
+        Save all keyword-value lines in self._kwlines
         """
 
         if self._lines is None:
@@ -162,7 +183,7 @@ class BaseParser:
                 key, value = s
             elif len(s) == 1:
                 key = s[0]
-                value = None
+                value = ""  # Empty string for key without values
             else:
                 raise FormatError("Cannot parse line {} into key-value"
                     " pair".format(line))
@@ -171,16 +192,35 @@ class BaseParser:
         self._keywords = out_dict
         return out_dict
 
-    def get_keywords(self):
-        """Return the keywords as a dictionary"""
-        return self._keywords
+    def get_dict(self):
+        """
+        Get the parsed information in a dictionary
+        """
+        res = dict(self._keywords)
+        res.update(self._blocks)
+        return res
 
-    def get_blocks(self):
-        """Returns the blocks as a dictionary"""
-        return self._blocks
+class Parser(BaseParser):
+    """
+    General parser class
+    """
+
+    def parse(self):
+        """
+        Parse the contents
+        """
+        super(Parser, self).parse()
+        old_keywords = self._keywords
+
+        new_keywords = {}
+        for key, value in old_keywords.items():
+            new_keywords[key] = convert_type_kw(value, key)
+
+        self._keywords = new_keywords
 
 
-class CellParser(BaseParser):
+
+class CellParser(Parser):
 
     def __init__(self, fname):
         """
@@ -224,7 +264,6 @@ class CellParser(BaseParser):
 
         return np.asarray(cell)
 
-    # TODO: PARSE frac style
     def get_positions(self):
         """
         Positions of ions
@@ -235,21 +274,35 @@ class CellParser(BaseParser):
         """
         if self._blocks is None:
             self.parse()
-        pos_lines = self._blocks['positions_abs']
 
-        pos = []
-        elements = []
-        for l in pos_lines:
-            ls = l.split()
-            element = ls[0].capitalize()
-            xyz = [float(a) for a in ls[1:4]]
-            # Ignore the spin and labels for now
-            pos.append(xyz)
-            elements.append(element)
+        is_frac = False
+        pos_lines = self._blocks.get('positions_abs')
+        if not pos_lines:
+            pos_lines = self._blocks.get('positions_frac')
+            is_frac = True
+
+
+        if pos_lines:
+            pos = []
+            elements = []
+            for l in pos_lines:
+                ls = l.split()
+                element = ls[0].capitalize()
+                xyz = [float(a) for a in ls[1:4]]
+                # Ignore the spin and labels for now
+                pos.append(xyz)
+                elements.append(element)
+        pos = np.array(pos)
+
+        if is_frac:
+            # We need to multiple the positions with cells
+            cell = self.get_cell()
+            pos = np.dot(cell, pos.T).T
+
         return elements, pos
 
 
-class ParamParser(BaseParser):
+class ParamParser(CellParser):
     """Parser class for PARAM files"""
     pass
 
@@ -277,3 +330,40 @@ def parse_pos_line(cell_line):
 #        if tags.find("spin=")
     return elem, coor, tags
 
+def convert_type_kw(value, key=None):
+    """
+    Try to convert type of the value
+    """
+
+    try:
+        out = int(value)
+    except:
+        pass
+    else:
+        return out
+
+    try:
+        out = float(value)
+    except:
+        pass
+    else:
+        return out
+
+    sline = value.split()
+    if len(sline) == 3:
+        try:
+            out = list(map(int, sline))
+        except:
+            pass
+        else:
+            return out
+
+        try:
+            out = list(map(float, sline))
+        except:
+            pass
+        else:
+            return out
+
+    # If nothing successful
+    return out

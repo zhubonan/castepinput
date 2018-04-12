@@ -2,62 +2,98 @@
 Test parser
 """
 
-
 import os
-import unittest
+import pytest
 from castepinputs.parser import BaseParser, CellParser
 
 current_path = os.path.split(__file__)[0]
 
-class TestParser(unittest.TestCase):
+lines_example = ["fix_all_cell:True",
+                 "kpoints_mp_grid=4 4 4 # Foo",
+                 "cut_off_Energy 300   #Bar",
+                 "xc_functional :  pbesol",
+                 "SYMMETRY_GENERATE"]
 
-    def get_cellfile(self, index=None):
+expected_lines = ["fix_all_cell:True",
+                      "kpoints_mp_grid=4 4 4",
+                      "cut_off_Energy 300",
+                      "xc_functional :  pbesol",
+                      "SYMMETRY_GENERATE"]
 
-        if index is not None:
-            fn = "cell_example_{}.cell".format(index)
-        else:
-            fn = "cell_example.cell"
+expected_comments = ["Foo", "Bar"]
 
-        return os.path.join(current_path, 'data/' + fn)
+block_lines = ["%BLOCK SPECIES_POT",
+                "O C9",
+                "%ENDBLOCK SPECIES_POT"]
 
-    def setUp(self):
-        self.parser = BaseParser(os.path.join(current_path, 'data/cell_example.cell'))
+expected_kw_dict = {"fix_all_cell": "True",
+                    "kpoints_mp_grid": "4 4 4",
+                    "cut_off_energy": "300",
+                    "xc_functional": "pbesol",
+                    "symmetry_generate": ""}
+expected_block_dict = {"species_pot": ["O C9"]}
 
-    def test_read(self):
-        self.assertTrue(self.parser.content)
+@pytest.fixture
+def base_parser():
+    return BaseParser(lines_example)
 
-    def test_clean_up_lines(self):
-        self.parser._clean_up_lines()
-        lines, comments = self.parser._clean_up_lines()
-        self.assertEqual(len(comments), 4)
-        #print(lines, comments)
+@pytest.fixture
+def cell_parser():
+    return CellParser(os.path.join(current_path, 'data/cell_example_1.cell'))
 
-    def test_split_blocks(self):
-        self.parser._clean_up_lines()
-        block, kws = self.parser._split_block_kw()
-        #print(block, kws)
+def testBase_clean_up(base_parser):
+    """
+    Test cleaning up of the lines
+    """
+    lines, comments = base_parser._clean_up_lines()
+    assert lines == expected_lines
+    assert comments == expected_comments
 
-    def test_kw_parse(self):
-        self.parser._clean_up_lines()
-        self.parser._split_block_kw()
-        out = self.parser._parse_keywords()
-        self.assertEqual(out['kpoints_mp_grid'], '1 1 1')
-        self.assertEqual(out['kpoint_mp_grid'], '2 2 2')
+def testBase_blocks(base_parser):
+    """
+    Test parsing the blocks
+    """
+    base_parser._raw_lines += block_lines
+    base_parser._clean_up_lines()
+    blocks, kwlines = base_parser._split_block_kw()
+    assert "species_pot" in blocks
+    assert kwlines == expected_lines
+    assert base_parser._blocks == expected_block_dict
 
-    def test_cell_parser(self):
-        cell_parser = CellParser(self.get_cellfile())
-        cell_parser.parse()
-        print(cell_parser.get_blocks())
-        cell = cell_parser.get_cell()
-        self.assertEqual(len(cell), 3)
+def testBase_outputs(base_parser):
+    """
+    Test parsing keyword value pairs and final output
+    """
+    base_parser._raw_lines += block_lines
+    base_parser.parse()
+    assert base_parser._keywords == expected_kw_dict
 
-    def test_cell_parser2(self):
-        cell_parser = CellParser(self.get_cellfile(2))
-        cell_parser.parse()
-        print(cell_parser.get_blocks())
-        cell = cell_parser.get_cell()
-        self.assertEqual(len(cell), 3)
+    res_dict = expected_kw_dict.copy()
+    res_dict.update(expected_block_dict)
+    assert base_parser.get_dict() == res_dict
 
+def test_cell_parser(cell_parser):
+    cell_parser.parse()
+    cell = cell_parser.get_cell()
+    assert len(cell), 3
 
-if __name__ == "__main__":
-    unittest.main()
+    out_dict = cell_parser.get_dict()
+    assert out_dict["kpoints_mp_grid"] == [1, 1, 1]
+    assert out_dict["kpoint_mp_grid"] == [2, 2, 2]
+    assert "COMMENT1" in cell_parser.comments
+
+@pytest.mark.parametrize("data, expected", [
+    [1, {"pos": [[1, 1, 1], [2,2,2]],
+         "cell": [[4, 0, 0],
+                  [0, 4 , 0],
+                  [0, 0, 4]]}],
+    [2, {"pos": [[0, 0, 0], [1, 1, 1]],
+         "cell": [[2, 0, 0],
+                  [0, 2, 0],
+                  [0, 0, 2]]}]])
+def test_cell_parser_cell_and_pos(data, expected):
+    parser  = CellParser(os.path.join(current_path,
+        'data/cell_example_{}.cell'.format(data)))
+    parser.parse()
+    assert parser.get_cell().tolist() == expected["cell"]
+    assert parser.get_positions()[1].tolist() == expected["pos"]
