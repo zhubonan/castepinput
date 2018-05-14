@@ -14,7 +14,6 @@ To stardardise data parsed. Output follows the convension
 from __future__ import print_function
 from __future__ import division
 
-import os
 import re
 
 import numpy as np
@@ -54,13 +53,14 @@ class BaseParser(object):
                     lin.append(line.strip())
             self._raw_lines = lin
 
-        self._lines = None  # Processed lines
-        self._kwlines = None  # key-value paired lines
-        self._blocks = None  # A dictionary of blocks
+        self._lines = []  # Processed lines
+        self._kwlines = []  # key-value paired lines
+        self._blocks = {}  # A dictionary of blocks
+        self._keywords = {} # A dictionary of key value pairs
 
     def parse(self):
         """
-        Parser the input file
+        Parse the input file
         """
         self._clean_up_lines()  # Remove comments, blank lines
         self._split_block_kw()  # Extract blocks from the lines
@@ -195,7 +195,10 @@ class BaseParser(object):
     def get_dict(self):
         """
         Get the parsed information in a dictionary
+        This is the main function that will be used.
         """
+        if not self._keywords:
+            self.parse()
         res = dict(self._keywords)
         res.update(self._blocks)
         return res
@@ -204,14 +207,30 @@ class Parser(BaseParser):
     """
     General parser class
     Try to convert data types
-    int >> float >> plain text
+    bool >> int >> float >> plain text
     """
+    _CONVERT_TYPE = True
+
+    def __init__(self, lines, convert_type=True):
+        """
+        Initialize the parser by passing either:
+        - A list of lines to be parsed
+        - A path to the file to be parsed
+
+        :param convert_type: Either try to convert the types or not
+        """
+        super(Parser, self).__init__(lines)
+        self._CONVERT_TYPE = convert_type
 
     def parse(self):
         """
         Parse the contents
+        Also will try to convert the types if requested
         """
         super(Parser, self).parse()
+        if self._CONVERT_TYPE is False:
+            return self._keywords
+
         old_keywords = self._keywords
 
         new_keywords = {}
@@ -303,8 +322,23 @@ class CellParser(Parser):
 
         return elements, pos
 
+    def get_dict(self):
+        """
+        Return a dictionary of the settings.
+        Position and cell blocks are excluded from output and should be
+        returned using get_positions or get_cell methods.
+        """
+        res = super(CellParser, self).get_dict()
+        to_pop = ["positions_frac",
+                  "positions_abs",
+                  "lattice_abc",
+                  "lattice_cart"]
+        for p in to_pop:
+            res.pop(p, None)
+        return res
 
-class ParamParser(CellParser):
+
+class ParamParser(Parser):
     """Parser class for PARAM files"""
     pass
 
@@ -337,6 +371,12 @@ def convert_type_kw(value, key=None):
     Try to convert type of the value
     """
 
+    # Check if it is bool
+    if value.lower() == "true":
+        return True
+    elif value.lower() == "false":
+        return False
+
     try:
         out = int(value)
     except ValueError:
@@ -368,4 +408,4 @@ def convert_type_kw(value, key=None):
             return out
 
     # If nothing successful
-    return out
+    return value
