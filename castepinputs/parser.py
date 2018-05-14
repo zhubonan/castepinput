@@ -203,6 +203,8 @@ class BaseParser(object):
 class Parser(BaseParser):
     """
     General parser class
+    Try to convert data types
+    int >> float >> plain text
     """
 
     def parse(self):
@@ -337,14 +339,14 @@ def convert_type_kw(value, key=None):
 
     try:
         out = int(value)
-    except:
+    except ValueError:
         pass
     else:
         return out
 
     try:
         out = float(value)
-    except:
+    except ValueError:
         pass
     else:
         return out
@@ -353,14 +355,14 @@ def convert_type_kw(value, key=None):
     if len(sline) == 3:
         try:
             out = list(map(int, sline))
-        except:
+        except ValueError:
             pass
         else:
             return out
 
         try:
             out = list(map(float, sline))
-        except:
+        except ValueError:
             pass
         else:
             return out
