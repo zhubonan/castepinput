@@ -6,6 +6,13 @@ from math import sin, cos, pi, sqrt
 import numpy as np
 
 
+class Block(list):
+    """
+    Blocks in CASTEP inputs files
+    """
+    pass
+
+
 def cell_abcs_to_vec(abcs):
     """
     Convert fractional cell format to vectors.
@@ -45,7 +52,7 @@ def cell_abcs_to_vec(abcs):
     cx = cos_beta
     cy = (cos_alpha - cos_beta * cos_gamma) / sin_gamma
     cz = sqrt(1. - cx * cx - cy * cy)
-    vc = c * np.array([cx, cy ,cz])
+    vc = c * np.array([cx, cy, cz])
 
     cell = np.vstack([va, vb, vc])
     return cell

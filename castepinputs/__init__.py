@@ -1,4 +1,6 @@
 """
 Base module of castepinputs
 """
-from .parser import CellParser, ParamParser
+from .inputs import CastepInput
+
+

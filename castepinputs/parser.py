@@ -15,9 +15,9 @@ from __future__ import print_function
 from __future__ import division
 
 import re
-
 import numpy as np
 import castepinputs.utils as utils
+from .utils import Block
 
 COMMENT_SYMBOLS = ["#", "!"]
 
@@ -44,6 +44,12 @@ class BaseParser(object):
         Parameters:
         :params lines: A list of the file content or name of a file to be read
         """
+        self._init(lines)
+
+    def _init(self, lines):
+        """
+        Initialize storage space
+        """
         if isinstance(lines, (list, tuple)):
             self._raw_lines = lines  # Raw input lines
         else:
@@ -56,7 +62,7 @@ class BaseParser(object):
         self._lines = []  # Processed lines
         self._kwlines = []  # key-value paired lines
         self._blocks = {}  # A dictionary of blocks
-        self._keywords = {} # A dictionary of key value pairs
+        self._keywords = {}  # A dictionary of key value pairs
 
     def parse(self):
         """
@@ -168,7 +174,7 @@ class BaseParser(object):
         blocks = {}
         for key, index in block_indices.items():
             lines = self._lines[index[0]+1:index[1]]
-            blocks[key.lower()] = lines
+            blocks[key.lower()] = Block(lines)
 
         self._blocks = blocks
         self._kwlines = kwlines
@@ -192,9 +198,9 @@ class BaseParser(object):
         self._keywords = out_dict
         return out_dict
 
-    def get_dict(self):
+    def get_plain_dict(self):
         """
-        Get the parsed information in a dictionary
+        Get the parsed information in a dictionary in a plain format.
         This is the main function that will be used.
         """
         if not self._keywords:
@@ -202,6 +208,13 @@ class BaseParser(object):
         res = dict(self._keywords)
         res.update(self._blocks)
         return res
+
+    def get_dict(self):
+        """
+        Get the parsed information in a dictionary
+        This is the main function that will be used.
+        """
+        return self.get_plain_dict()
 
 class Parser(BaseParser):
     """
@@ -238,7 +251,6 @@ class Parser(BaseParser):
             new_keywords[key] = convert_type_kw(value, key)
 
         self._keywords = new_keywords
-
 
 
 class CellParser(Parser):
@@ -328,7 +340,7 @@ class CellParser(Parser):
         Position and cell blocks are excluded from output and should be
         returned using get_positions or get_cell methods.
         """
-        res = super(CellParser, self).get_dict()
+        res = self.get_plain_dict()
         to_pop = ["positions_frac",
                   "positions_abs",
                   "lattice_abc",
@@ -341,6 +353,7 @@ class CellParser(Parser):
 class ParamParser(Parser):
     """Parser class for PARAM files"""
     pass
+
 
 def parse_pos_line(cell_line):
     """
@@ -366,46 +379,56 @@ def parse_pos_line(cell_line):
 #        if tags.find("spin=")
     return elem, coor, tags
 
+class Converter(object):
+    """
+    Class for convert that convert types
+    """
+    ACCEPTED_ERRORS = (ValueError,)
+
+    def __init__(self, func):
+        """
+        Initialized by passing the conversion function
+        """
+        self.convert_func = func
+
+    def convert(self, value):
+        assert isinstance(value, basestring)
+        try:
+            out = self.convert_func(value)
+        except self.ACCEPTED_ERRORS as e:
+            return False, value
+        else:
+            return True, out
+
+
+def booltest(value):
+    if value.lower() == "true":
+        return True
+    elif value.lower() == "false":
+        return True
+    else:
+        raise ValueError
+
+
+intconv = Converter(int)
+floatconv = Converter(float)
+intarrayconv = Converter(lambda x: list(map(int, x.split())))
+floatarrayconv = Converter(lambda x: list(map(float, x.split())))
+boolconv = Converter(booltest)
+
+
 def convert_type_kw(value, key=None):
     """
     Try to convert type of the value
     """
 
     # Check if it is bool
-    if value.lower() == "true":
-        return True
-    elif value.lower() == "false":
-        return False
+    convs = [boolconv, intconv, floatconv,
+            intarrayconv, floatarrayconv
+    ]
+    for c in convs:
+        success, value = c.convert(value)
+        if success:
+            break
 
-    try:
-        out = int(value)
-    except ValueError:
-        pass
-    else:
-        return out
-
-    try:
-        out = float(value)
-    except ValueError:
-        pass
-    else:
-        return out
-
-    sline = value.split()
-    if len(sline) == 3:
-        try:
-            out = list(map(int, sline))
-        except ValueError:
-            pass
-        else:
-            return out
-
-        try:
-            out = list(map(float, sline))
-        except ValueError:
-            pass
-        else:
-            return out
-
-    # If nothing successful
     return value
