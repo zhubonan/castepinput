@@ -392,7 +392,7 @@ class Converter(object):
         self.convert_func = func
 
     def convert(self, value):
-        assert isinstance(value, basestring)
+        assert isinstance(value, str)
         try:
             out = self.convert_func(value)
         except self.ACCEPTED_ERRORS as e:
