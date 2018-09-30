@@ -59,12 +59,23 @@ class CastepInput(OrderedDict, Parser):
     def get_string(self):
         return "\n".join(self.get_file_lines())
 
-    def write(self, fh):
+    def save(self, fh):
         with open(fh, "w") as fh:
             fh.write(self.get_string())
 
-    def from_file(self, fn):
+    @classmethod
+    def from_file(cls, fn):
+        """
+        Constrant an instance from the file
+        """
+        out = cls()
+        out.load_file(fn)
+        return out
 
+    def load_file(self, fn):
+        """
+        Load from the file
+        """
         with open(fn) as fh:
             lines = fh.readlines()
         super(CastepInput, self)._init(lines)
@@ -72,16 +83,16 @@ class CastepInput(OrderedDict, Parser):
         for k, value in dict_out.items():
             self.__setitem__(k, value)
 
-    def test_read_write(self, basic_input, tmpdir):
+    def test_read_write(self, basic_input):
         """
         Adhoc test of reading and writing
         """
         import tempfile
         import os
         outname = os.path.join(tempfile.mkdtemp(), "test.in")
-        self.write(outname)
+        self.save(outname)
         input2 = type(self)()
-        input2.from_file(outname)
+        input2.load_file(outname)
         assert dict(input2) == dict(basic_input)
 
 

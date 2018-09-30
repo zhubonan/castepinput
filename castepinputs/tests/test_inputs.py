@@ -56,15 +56,15 @@ def test_string(basic_input):
     "\n".join(lines) == basic_input.get_string()
 
 
-def test_write(basic_input, tmpdir):
+def test_save(basic_input, tmpdir):
     outname = str(tmpdir.join("test.in"))
-    basic_input.write(outname)
+    basic_input.save(outname)
     os.remove(outname)
 
 
-def test_read_write(basic_input, tmpdir):
+def test_read_save(basic_input, tmpdir):
     outname = str(tmpdir.join("test.in"))
-    basic_input.write(outname)
+    basic_input.save(outname)
     input2 = CastepInput()
-    input2.from_file(outname)
+    input2.load_file(outname)
     assert dict(input2) == dict(basic_input)
