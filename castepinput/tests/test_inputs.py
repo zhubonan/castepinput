@@ -2,8 +2,8 @@
 Test module for the inputs
 """
 import os
-from castepinputs.inputs import CastepInput, CellInput
-from castepinputs.inputs import Block, parse_pos_line, construct_pos_line
+from castepinput.inputs import CastepInput, CellInput
+from castepinput.inputs import Block, parse_pos_line, construct_pos_line
 import pytest
 import numpy as np
 

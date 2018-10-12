@@ -4,8 +4,8 @@ Test parser
 
 import os
 import pytest
-from castepinputs.parser import BaseParser, Parser
-from castepinputs.parser import Block
+from castepinput.parser import BaseParser, Parser
+from castepinput.parser import Block
 
 current_path = os.path.split(__file__)[0]
 

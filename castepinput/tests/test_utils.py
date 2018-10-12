@@ -5,7 +5,7 @@ Tests for the util module
 import numpy as np
 
 from unittest import TestCase
-import castepinputs.common as common
+import castepinput.common as common
 
 
 class TestCommon(TestCase):

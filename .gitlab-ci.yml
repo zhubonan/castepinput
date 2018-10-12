@@ -4,7 +4,7 @@ pytest2:
     - pip install --user numpy 
     - pip install --user pytest
     - pip install --user .
-    - python -m pytest castepinputs/tests
+    - python -m pytest castepinput/tests
 
 pytest3:
   image: python:3
@@ -12,4 +12,4 @@ pytest3:
     - pip install --user numpy 
     - pip install --user pytest
     - pip install --user .
-    - python -m pytest castepinputs/tests
+    - python -m pytest castepinput/tests

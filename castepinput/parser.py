@@ -16,7 +16,7 @@ from __future__ import division
 
 import re
 import numpy as np
-import castepinputs.common as common
+import castepinput.common as common
 from .common import Block
 
 COMMENT_SYMBOLS = ["#", "!"]
