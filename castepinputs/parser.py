@@ -16,8 +16,8 @@ from __future__ import division
 
 import re
 import numpy as np
-import castepinputs.utils as utils
-from .utils import Block
+import castepinputs.common as common
+from .common import Block
 
 COMMENT_SYMBOLS = ["#", "!"]
 
@@ -58,11 +58,14 @@ class BaseParser(object):
                 for line in fh:
                     lin.append(line.strip())
             self._raw_lines = lin
+        self._init_storage()
 
+    def _init_storage(self):
         self._lines = []  # Processed lines
         self._kwlines = []  # key-value paired lines
         self._blocks = {}  # A dictionary of blocks
         self._keywords = {}  # A dictionary of key value pairs
+
 
     def parse(self):
         """
@@ -97,9 +100,9 @@ class BaseParser(object):
         cleaned_lines = []
         for line in lines:
 
+            line = line.strip()  # Get rid of white spaces
             if not line:
                 continue  # skip empty lines
-            line = line.strip()  # Get rid of white spaces
 
             # We first check for comment
             if line[0] in COMMENT_SYMBOLS:
@@ -253,131 +256,6 @@ class Parser(BaseParser):
         self._keywords = new_keywords
 
 
-class CellParser(Parser):
-
-    def __init__(self, fname):
-        """
-        Parser for cell files.
-        Parameters
-        ----------
-        :param fname: Path to the cell file
-
-        Usage
-        -----
-
-        parser = CellParser("cellfile.cell")
-        parser.parse()
-        kws = parser.get_keywords()
-        cell = parser.get_cell()
-        pos = parser.get_positions()
-        """
-        super(CellParser, self).__init__(fname)
-
-    def get_cell(self):
-        """Return cell vectors"""
-        if self._blocks is None:
-            self.parse()
-
-        cell = []
-        if "lattice_cart" in self._blocks:
-            cell_lines = self._blocks['lattice_cart']
-
-            for l in cell_lines:
-                cell.append([float(v) for v in l.split()])
-
-        elif "lattice_abc" in self._blocks:
-            abc_lines = self._blocks['lattice_abc']
-
-            abc = []
-            for l in abc_lines:
-                abc.extend([float(v) for v in l.split()])
-            assert len(abc) == 6, "Problem in lattice_abc block"
-
-            cell = utils.cell_abcs_to_vec(abc)
-
-        return np.asarray(cell)
-
-    def get_positions(self):
-        """
-        Positions of ions
-
-        :returns elements: A list of elements
-        :returns pos: A list of list of floats of the positions
-        :returns tags: A dictionary of tags e.g spin, mixture, label etc
-        """
-        if self._blocks is None:
-            self.parse()
-
-        is_frac = False
-        pos_lines = self._blocks.get('positions_abs')
-        if not pos_lines:
-            pos_lines = self._blocks.get('positions_frac')
-            is_frac = True
-
-
-        if pos_lines:
-            pos = []
-            elements = []
-            for l in pos_lines:
-                ls = l.split()
-                element = ls[0].capitalize()
-                xyz = [float(a) for a in ls[1:4]]
-                # Ignore the spin and labels for now
-                pos.append(xyz)
-                elements.append(element)
-        pos = np.array(pos)
-
-        if is_frac:
-            # We need to multiple the positions with cells
-            cell = self.get_cell()
-            pos = np.dot(cell, pos.T).T
-
-        return elements, pos
-
-    def get_dict(self):
-        """
-        Return a dictionary of the settings.
-        Position and cell blocks are excluded from output and should be
-        returned using get_positions or get_cell methods.
-        """
-        res = self.get_plain_dict()
-        to_pop = ["positions_frac",
-                  "positions_abs",
-                  "lattice_abc",
-                  "lattice_cart"]
-        for p in to_pop:
-            res.pop(p, None)
-        return res
-
-
-class ParamParser(Parser):
-    """Parser class for PARAM files"""
-    pass
-
-
-def parse_pos_line(cell_line):
-    """
-    Parse a line in the cell block.
-    Need to treat LABEL, SPIN, MIXTURE properly
-    """
-    import re
-    cell_line = cell_line.strip()
-    s = re.split(" ", cell_line, maxsplit=5)
-    if len(s) < 4:
-        raise ValueError("Cannot understand line: {}".format(cell_line))
-    if len(s) == 5:
-        tags = s[-1]
-    else:
-        tags = None
-
-    elem = s[0]
-    coor = map(float, s[1:4])
-
-#    if tags is not None:
-#        # Parse the tags
-#        tags = tags.lower()  # Change to lower case
-#        if tags.find("spin=")
-    return elem, coor, tags
 
 class Converter(object):
     """

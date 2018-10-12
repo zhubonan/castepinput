@@ -4,7 +4,7 @@ Test parser
 
 import os
 import pytest
-from castepinputs.parser import BaseParser, CellParser
+from castepinputs.parser import BaseParser, Parser
 from castepinputs.parser import Block
 
 current_path = os.path.split(__file__)[0]
@@ -39,8 +39,8 @@ def base_parser():
 
 
 @pytest.fixture
-def cell_parser():
-    return CellParser(os.path.join(current_path, 'data/cell_example_1.cell'))
+def parser():
+    return Parser(lines_example)
 
 
 def testBase_clean_up(base_parser):
@@ -77,35 +77,11 @@ def testBase_outputs(base_parser):
     assert base_parser.get_plain_dict() == res_dict
 
 
-def test_cell_parser(cell_parser):
-    cell_parser.parse()
-    cell = cell_parser.get_cell()
-    assert len(cell), 3
-
-    out_dict = cell_parser.get_plain_dict()
-    assert out_dict["kpoints_mp_grid"] == [1, 1, 1]
-    assert out_dict["kpoint_mp_grid"] == [2, 2, 2]
-    assert "COMMENT1" in cell_parser.comments
-
-
-@pytest.mark.parametrize("data, expected",
-                         [[
-                             1,
-                             {
-                                 "pos": [[1, 1, 1], [2, 2, 2]],
-                                 "cell": [[4, 0, 0], [0, 4, 0], [0, 0, 4]]
-                             }
-                         ],
-                          [
-                              2,
-                              {
-                                  "pos": [[0, 0, 0], [1, 1, 1]],
-                                  "cell": [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
-                              }
-                          ]])
-def test_cell_parser_cell_and_pos(data, expected):
-    parser = CellParser(
-        os.path.join(current_path, 'data/cell_example_{}.cell'.format(data)))
+def test_cell_parser(parser):
     parser.parse()
-    assert parser.get_cell().tolist() == expected["cell"]
-    assert parser.get_positions()[1].tolist() == expected["pos"]
+
+    out_dict = parser.get_plain_dict()
+    assert out_dict["kpoints_mp_grid"] == [4, 4, 4]
+    assert "Foo" in parser.comments
+
+

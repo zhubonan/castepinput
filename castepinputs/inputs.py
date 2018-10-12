@@ -2,11 +2,13 @@
 Classes for .param and .cell files
 """
 from collections import OrderedDict
-from .parser import ParamParser, CellParser, Parser
-from .utils import Block
+import numpy as np
+from .parser import Parser
+from .common import Block, cell_abcs_to_vec
 
 
-class CastepInput(OrderedDict, Parser):
+
+class CastepInput(OrderedDict):
     """
     Class for storing key - values pairs of CASTEP inputs
     This class can be used for .param, .cell and also other CASTEP style
@@ -78,14 +80,14 @@ class CastepInput(OrderedDict, Parser):
         """
         with open(fn) as fh:
             lines = fh.readlines()
-        super(CastepInput, self)._init(lines)
-        dict_out = self.get_dict()
+        p = Parser(lines)
+        dict_out = p.get_dict()
         for k, value in dict_out.items():
             self.__setitem__(k, value)
 
     def test_read_write(self, basic_input):
         """
-        Adhoc test of reading and writing
+        Adhoc test of readin and writing
         """
         import tempfile
         import os
@@ -96,9 +98,128 @@ class CastepInput(OrderedDict, Parser):
         assert dict(input2) == dict(basic_input)
 
 
-class ParamInput(CastepInput, ParamParser):
+class ParamInput(CastepInput):
     pass
 
 
-class CellInput(CastepInput, CellParser):
-    pass
+class CellInput(CastepInput):
+
+    def get_cell(self):
+        """Return cell vectors"""
+
+        cell = []
+        if "lattice_cart" in self:
+            cell_lines = self['lattice_cart']
+
+            for l in cell_lines:
+                cell.append([float(v) for v in l.split()])
+
+        elif "lattice_abc" in self:
+            abc_lines = self['lattice_abc']
+
+            abc = []
+            for l in abc_lines:
+                abc.extend([float(v) for v in l.split()])
+            assert len(abc) == 6, "Problem in lattice_abc block"
+
+            cell = cell_abcs_to_vec(abc)
+
+        return np.asarray(cell)
+
+    def get_positions(self):
+        """
+        Positions of ions
+
+        :returns elements: A list of elements
+        :returns pos: A list of list of floats of the positions
+        :returns tags: A dictionary of tags e.g spin, mixture, label etc
+        """
+        is_frac = False
+        pos_lines = self.get('positions_abs')
+        if not pos_lines:
+            pos_lines = self.get('positions_frac')
+            is_frac = True
+        if not pos_lines:
+            raise RuntimeError("No positions defined")
+
+
+        elems = []
+        pos = []
+        tags = []
+        for l in pos_lines:
+            e, p, t = parse_pos_line(l)
+            elems.append(e)
+            pos.append(p)
+            tags.append(t)
+
+        pos = np.array(pos)
+
+        if is_frac:
+            # We need to multiple the positions with cells
+            cell = self.get_cell()
+            pos = np.dot(cell, pos.T).T
+
+        return elems, pos, tags
+
+
+    def set_cell(self, cell):
+        """
+        Set cells
+        """
+        cell_lines = Block()
+
+        for x in cell:
+            cell_lines.append("{:.10f}  {:.10f}  {:.10f}".format(*x))
+
+        self.__setitem__("lattice_cart", Block(cell_lines))
+
+
+    def set_positions(self, elements, positions, tags=None, frac=False):
+        """
+        Set positions
+        """
+        if frac:
+            bname = "positions_frac"
+        else:
+            bname = "positions_abs"
+
+        pos_lines = Block()
+        if not tags:
+            tags = [""] * len(elements)
+        for e, p, t in zip(elements, positions, tags):
+            pos_lines.append(construct_pos_line(e, p, t))
+
+        self.__setitem__(bname, Block(pos_lines))
+
+
+def parse_pos_line(cell_line):
+    """
+    Parse single line in the cell block.
+    Return element, coorindates and a dictionary of tags
+    """
+
+    import re
+    cell_line = cell_line.strip()
+    s = re.split("[\s]+", cell_line, maxsplit=4)
+    if len(s) < 4:
+        raise ValueError("Cannot understand line: {}".format(cell_line))
+    if len(s) == 5:
+        tags = s[-1]
+    else:
+        tags = ""
+
+    elem = s[0].capitalize()
+    coor = list(map(float, s[1:4]))
+
+    return elem, coor, tags
+
+
+def construct_pos_line(elem, coor, tags):
+    """
+    Do the opposite of the parse_pos_line
+    """
+    line = "{elem}  {x:.10f} {y:.10f} {z:.10f} {tags}"
+
+    return line.format(elem=elem, x=coor[0], y=coor[1], z=coor[2],
+                       tags=tags)
+

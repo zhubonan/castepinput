@@ -5,21 +5,21 @@ Tests for the util module
 import numpy as np
 
 from unittest import TestCase
-import castepinputs.utils as utils
+import castepinputs.common as common
 
 
-class TestUtils(TestCase):
+class TestCommon(TestCase):
 
     def test_abc_to_cell(self):
 
         abc = [1, 1, 1, 90.0, 90.0, 90.0]
-        cell = utils.cell_abcs_to_vec(abc)
+        cell = common.cell_abcs_to_vec(abc)
         cmp = cell == np.identity(3, dtype=np.float64)
         self.assertTrue(np.all(cmp))
 
         # Check a differnt cell
         abc = [1, 1, 1, 60.0, 60.0, 60.0]
-        cell = utils.cell_abcs_to_vec(abc)
+        cell = common.cell_abcs_to_vec(abc)
         for v in cell:
             self.assertEqual(np.dot(v, v), 1)
 
