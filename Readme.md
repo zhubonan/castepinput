@@ -28,6 +28,12 @@ cell.get_string()
 cell = CellInput(symmetry_generate='true')
 cell.get_string()
 # Should give 'symmetry_genreate : true'
+
+cell = CellInput(symmetry_generate='')
+cell.get_string()
+# Should give 'symmetry_genreatetrue'
+
+cell = CellInput(symmetry_generate='')
 ```
 Input files can be write out using `self.save` method.
 
@@ -36,4 +42,5 @@ For CellInput, parsed cell vectors, atomic positions and be accessed by
 `get_cell` and `get_positions` methods.
 We do try to be smart and convert string into python types where it is possible.
 Supported types are integer, floats and 1-d arrays made of integer/floats.
-These coversions can be avoided by using `BasicParser` to read the files.
+These coversions can be avoided by using `BasicParser` to read the files, 
+or use `ParamInput.from_file(filename, plain=True)`.

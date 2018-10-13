@@ -1,6 +1,7 @@
 """
 Test module for the inputs
 """
+from __future__ import print_function
 import os
 from castepinput.inputs import CastepInput, CellInput
 from castepinput.inputs import Block, parse_pos_line, construct_pos_line
@@ -127,6 +128,12 @@ def test_input_pos_lines(cell_input):
     assert ntags == tags
 
 
+def visual_inspect(inp):
+
+    print("\n\nSTART OF Visual inspection:")
+    print(inp.get_string())
+    print("\n\nEND OF Visual inspection")
+
 def test_set_cell(cell_input):
     """
     Test set_cell method
@@ -136,6 +143,7 @@ def test_set_cell(cell_input):
     cin = [[1., 0, 0], [0, 1.5, 0], [0, 0, 1.]]
     cell_input.set_cell(cin)
     assert np.all(cell_input.get_cell() == cin)
+    visual_inspect(cell_input)
 
     cin = [3, 3, 3]
     cell_input.set_cell(cin)
@@ -156,6 +164,7 @@ def test_set_pos(cell_input):
     r = cell_input.get_positions()
     assert r[0] == ["O", "O"]
     assert np.all(r[1] == p)
+    visual_inspect(cell_input)
 
 
 @pytest.mark.parametrize("data, expected",
