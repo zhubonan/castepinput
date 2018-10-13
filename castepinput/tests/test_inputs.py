@@ -75,9 +75,16 @@ def test_save(basic_input, tmpdir):
 def test_save_read(basic_input, tmpdir):
     outname = str(tmpdir.join("test.in"))
     basic_input.save(outname)
-    input2 = CastepInput()
-    input2.load_file(outname)
+    input2 = CastepInput.from_file(outname)
     assert dict(input2) == dict(basic_input)
+
+    # Test round trip with Plain mode
+    input2 = CastepInput.from_file(outname, plain=True)
+    input2.save(outname)
+    input3 = CastepInput.from_file(outname, plain=True)
+    assert input2 == input3
+    # Check if all parsed values are string/Block
+    assert all([isinstance(s, (str, Block)) for s in input3.values()])
 
     # Test unit system
     basic_input.units["a"] = "eV"

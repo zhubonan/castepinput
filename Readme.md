@@ -36,5 +36,4 @@ For CellInput, parsed cell vectors, atomic positions and be accessed by
 `get_cell` and `get_positions` methods.
 We do try to be smart and convert string into python types where it is possible.
 Supported types are integer, floats and 1-d arrays made of integer/floats.
-These coversions can be avoided by using `BasicParser` to read the files, values of each
-keywords in this case are kepts as strings.
+These coversions can be avoided by using `BasicParser` to read the files.

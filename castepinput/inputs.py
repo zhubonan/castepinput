@@ -3,7 +3,7 @@ Classes for .param and .cell files
 """
 from collections import OrderedDict
 import numpy as np
-from .parser import Parser
+from .parser import Parser, PlainParser
 from .common import Block, cell_abcs_to_vec
 
 
@@ -70,21 +70,24 @@ class CastepInput(OrderedDict):
             fh.write(self.get_string())
 
     @classmethod
-    def from_file(cls, fn):
+    def from_file(cls, fn, plain=False):
         """
         Constrant an instance from the file
         """
         out = cls()
-        out.load_file(fn)
+        out.load_file(fn, plain)
         return out
 
-    def load_file(self, fn):
+    def load_file(self, fn, plain=False):
         """
         Load from the file
         """
         with open(fn) as fh:
             lines = fh.readlines()
-        p = Parser(lines)
+        if plain:
+            p = PlainParser(lines)
+        else:
+            p = Parser(lines)
         dict_out = p.get_dict()
         for k, value in dict_out.items():
             self.__setitem__(k, value)
