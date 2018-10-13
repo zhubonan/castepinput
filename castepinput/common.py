@@ -1,19 +1,37 @@
 """
-Utility module
+Module for some shared things
 """
+from __future__ import division, print_function
 from math import sin, cos, pi, sqrt
 
 import numpy as np
 
 
+class FormatError(RuntimeError):
+    pass
+
+
 class Block(list):
     """
-    Blocks in CASTEP inputs files
+    A class for blocks in CASTEP inputs files stored as a list of strings
     """
 
     def __repr__(self):
         r = super(Block, self).__repr__()
         return "Block(" + r + ")"
+
+    def compact(self, inplace=False):
+        """
+        Remove any blank lines
+        """
+        f = [s.strip() for s in self if s]
+        if inplace:
+            del self[:]
+            self.extend(f)
+            return self
+        else:
+            return f
+
 
 
 def cell_abcs_to_vec(abcs):

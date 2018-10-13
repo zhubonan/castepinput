@@ -11,26 +11,22 @@ To stardardise data parsed. Output follows the convension
 3. case of the values themselves are not affected
 4. content of the blocks are not affected
 """
+
 from __future__ import print_function
 from __future__ import division
 
 import re
-import numpy as np
-import castepinput.common as common
-from .common import Block
+from .common import Block, FormatError
 
 COMMENT_SYMBOLS = ["#", "!"]
 
+# RE for separating blocks
 block_start = re.compile("%block (\w+)", flags=re.IGNORECASE)
 block_finish = re.compile("%endblock (\w+)", flags=re.IGNORECASE)
 kw_split = re.compile("[ :=]+")
 
 
-class FormatError(RuntimeError):
-    pass
-
-
-class BaseParser(object):
+class PlainParser(object):
     """
     Base parser class
     Does nothing fancy, basic text processing
@@ -65,7 +61,6 @@ class BaseParser(object):
         self._kwlines = []  # key-value paired lines
         self._blocks = {}  # A dictionary of blocks
         self._keywords = {}  # A dictionary of key value pairs
-
 
     def parse(self):
         """
@@ -113,7 +108,7 @@ class BaseParser(object):
             for s in COMMENT_SYMBOLS:
                 pos = line.find(s)
                 if pos != -1:
-                    comments.append(line[pos+1:].strip())
+                    comments.append(line[pos + 1:].strip())
                     cld_line = line[:pos].strip()  # Remove trailing space
                     break
                 else:
@@ -145,7 +140,7 @@ class BaseParser(object):
             if start_match:
                 if in_block is True:
                     raise FormatError("End of block {}"
-                        " is not detected".format(start_name))
+                                      " is not detected".format(start_name))
                 start = i
                 in_block = True
                 start_name = start_match.group(1).lower()
@@ -160,7 +155,8 @@ class BaseParser(object):
                                       " found".format(end_name))
                 elif end_name != start_name:
                     raise FormatError("Mismatch block names, start: {}"
-                    " finish: {}".format(start_name, end_name))
+                                      " finish: {}".format(
+                                          start_name, end_name))
                 else:
                     block_indices[start_name] = (start, finish)
                     in_block = False
@@ -171,12 +167,12 @@ class BaseParser(object):
 
         if in_block is True:
             raise FormatError("End of block {}"
-                " not detected".format(start_name))
+                              " not detected".format(start_name))
 
         # Now extract block contents
         blocks = {}
         for key, index in block_indices.items():
-            lines = self._lines[index[0]+1:index[1]]
+            lines = self._lines[index[0] + 1:index[1]]
             blocks[key.lower()] = Block(lines)
 
         self._blocks = blocks
@@ -194,16 +190,16 @@ class BaseParser(object):
                 key = s[0]
                 value = ""  # Empty string for key without values
             else:
-                raise FormatError("Cannot parse line {} into key-value"
-                    " pair".format(line))
+                raise FormatError("Cannot parse into key-value"
+                                  " pair {}".format(line))
 
             out_dict[key.lower()] = value
         self._keywords = out_dict
         return out_dict
 
-    def get_plain_dict(self):
+    def get_dict(self):
         """
-        Get the parsed information in a dictionary in a plain format.
+        Get the parsed information in a dictionary in a dictionary.
         This is the main function that will be used.
         """
         if not self._keywords:
@@ -212,14 +208,8 @@ class BaseParser(object):
         res.update(self._blocks)
         return res
 
-    def get_dict(self):
-        """
-        Get the parsed information in a dictionary
-        This is the main function that will be used.
-        """
-        return self.get_plain_dict()
 
-class Parser(BaseParser):
+class Parser(PlainParser):
     """
     General parser class
     Try to convert data types
@@ -256,12 +246,11 @@ class Parser(BaseParser):
         self._keywords = new_keywords
 
 
-
 class Converter(object):
     """
     Class for convert that convert types
     """
-    ACCEPTED_ERRORS = (ValueError,)
+    ACCEPTED_ERRORS = (ValueError, )
 
     def __init__(self, func):
         """
@@ -273,7 +262,7 @@ class Converter(object):
         assert isinstance(value, str)
         try:
             out = self.convert_func(value)
-        except self.ACCEPTED_ERRORS as e:
+        except self.ACCEPTED_ERRORS:
             return False, value
         else:
             return True, out
@@ -301,9 +290,7 @@ def convert_type_kw(value, key=None):
     """
 
     # Check if it is bool
-    convs = [boolconv, intconv, floatconv,
-            intarrayconv, floatarrayconv
-    ]
+    convs = [boolconv, intconv, floatconv, intarrayconv, floatarrayconv]
     for c in convs:
         success, value = c.convert(value)
         if success:

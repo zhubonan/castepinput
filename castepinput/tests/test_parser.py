@@ -4,7 +4,7 @@ Test parser
 
 import os
 import pytest
-from castepinput.parser import BaseParser, Parser
+from castepinput.parser import PlainParser, Parser
 from castepinput.parser import Block
 
 current_path = os.path.split(__file__)[0]
@@ -35,7 +35,7 @@ expected_block_dict = {"species_pot": Block(["O C9"])}
 
 @pytest.fixture
 def base_parser():
-    return BaseParser(lines_example)
+    return PlainParser(lines_example)
 
 
 @pytest.fixture
@@ -74,13 +74,13 @@ def testBase_outputs(base_parser):
 
     res_dict = expected_kw_dict.copy()
     res_dict.update(expected_block_dict)
-    assert base_parser.get_plain_dict() == res_dict
+    assert base_parser.get_dict() == res_dict
 
 
 def test_cell_parser(parser):
     parser.parse()
 
-    out_dict = parser.get_plain_dict()
+    out_dict = parser.get_dict()
     assert out_dict["kpoints_mp_grid"] == [4, 4, 4]
     assert "Foo" in parser.comments
 
