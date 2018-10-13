@@ -21,9 +21,9 @@ from .common import Block, FormatError
 COMMENT_SYMBOLS = ["#", "!"]
 
 # RE for separating blocks
-block_start = re.compile("%block (\w+)", flags=re.IGNORECASE)
-block_finish = re.compile("%endblock (\w+)", flags=re.IGNORECASE)
-kw_split = re.compile("[ :=]+")
+block_start = re.compile(r"%block (\w+)", flags=re.IGNORECASE)
+block_finish = re.compile(r"%endblock (\w+)", flags=re.IGNORECASE)
+kw_split = re.compile(r"[ :=]+")
 
 
 class PlainParser(object):

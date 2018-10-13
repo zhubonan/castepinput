@@ -206,7 +206,7 @@ def parse_pos_line(cell_line):
 
     import re
     cell_line = cell_line.strip()
-    s = re.split("[\s]+", cell_line, maxsplit=4)
+    s = re.split(r"[\s]+", cell_line, maxsplit=4)
     if len(s) < 4:
         raise ValueError("Cannot understand line: {}".format(cell_line))
     if len(s) == 5:
