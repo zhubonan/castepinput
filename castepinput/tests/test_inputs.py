@@ -16,6 +16,7 @@ def basic_input():
     c["b"] = Block(["a", "b"])
     c["c"] = 5
     c["d"] = [2, 2, 2]
+    c["e"] = ""
     return c
 
 
@@ -71,12 +72,18 @@ def test_save(basic_input, tmpdir):
     os.remove(outname)
 
 
-def test_read_save(basic_input, tmpdir):
+def test_save_read(basic_input, tmpdir):
     outname = str(tmpdir.join("test.in"))
     basic_input.save(outname)
     input2 = CastepInput()
     input2.load_file(outname)
     assert dict(input2) == dict(basic_input)
+
+    # Test unit system
+    basic_input.units["a"] = "eV"
+    basic_input.save(outname)
+    input3 = CastepInput.from_file(outname)
+    assert input3["a"] == "a eV"
 
 
 # Tests for CellInputs

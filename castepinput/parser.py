@@ -186,6 +186,8 @@ class PlainParser(object):
             else:
                 raise FormatError("Cannot parse into key-value"
                                   " pair {}".format(line))
+            if not value:
+                value = ""
 
             out_dict[key.lower()] = value
         self._keywords = out_dict
@@ -257,9 +259,14 @@ class Converter(object):
         try:
             out = self.convert_func(value)
         except self.ACCEPTED_ERRORS:
-            return False, value
+            success = False
+            out = value
         else:
-            return True, out
+            success = True
+        if not out:
+            out = ""  # Use entry string for default
+
+        return success, out
 
 
 def booltest(value):
