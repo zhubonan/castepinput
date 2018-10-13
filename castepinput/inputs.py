@@ -165,9 +165,14 @@ class CellInput(CastepInput):
 
     def set_cell(self, cell):
         """
-        Set cells
+        Set cell. Accept a length 3 list/array or 3x3 list/array.
         """
         cell_lines = Block()
+        cell = np.asarray(cell)
+        if cell.shape == (3,):
+            cell = np.diag(cell)
+        if cell.shape != (3, 3):
+            raise ValueError("Cell must be a 3x3 matrix. But {} is given".format(cell))
 
         for x in cell:
             cell_lines.append("{:.10f}  {:.10f}  {:.10f}".format(*x))

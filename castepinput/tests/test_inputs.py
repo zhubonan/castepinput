@@ -114,10 +114,35 @@ def test_input_pos_lines(cell_input):
 
 
 def test_set_cell(cell_input):
+    """
+    Test set_cell method
+    """
 
+    # Both 3x3 or 3 array should be supported
     cin = [[1., 0, 0], [0, 1.5, 0], [0, 0, 1.]]
     cell_input.set_cell(cin)
     assert np.all(cell_input.get_cell() == cin)
+
+    cin = [3, 3, 3]
+    cell_input.set_cell(cin)
+    assert np.all(cell_input.get_cell() == np.diag(cin))
+
+    with pytest.raises(ValueError):
+        cell_input.set_cell([[0, 0, 0], [1, 1, 1]])
+
+    with pytest.raises(ValueError):
+        cell_input.set_cell([1, 2, 3, 4])
+
+def test_set_pos(cell_input):
+    """
+    Test set_positions method
+    """
+    p = [[0, 0, 0], [1, 0, 0]]
+    cell_input.set_positions(["O", "O"], p)
+    r = cell_input.get_positions()
+    assert r[0] == ["O", "O"]
+    assert np.all(r[1] == p)
+
 
 @pytest.mark.parametrize("data, expected",
                          [[
@@ -135,7 +160,7 @@ def test_set_cell(cell_input):
                               }
                           ]])
 
-def test_cell_parser_cell_and_pos(data, expected):
+def test_cell_and_pos(data, expected):
     cin = CellInput.from_file(
         os.path.join(current_path, 'data/cell_example_{}.cell'.format(data)))
     assert cin.get_cell().tolist() == expected["cell"]
