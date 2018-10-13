@@ -1,6 +1,4 @@
 from setuptools import setup, find_packages
-import json
-
 
 if __name__ == '__main__':
 
@@ -10,16 +8,15 @@ if __name__ == '__main__':
         include_package_data=True,
         packages=find_packages(),
         long_description=long_desc,
-        long_description_content_type='text/markdown', 
+        long_description_content_type='text/markdown',
         name='castepinput',
         author='Bonan Zhu',
         author_email='bon.zhu@protonmail.com',
         classifiers=[
-            "Programming Language:: Python",
-            "Development Status :: 4- Beta"
-            ],
+            "Programming Language:: Python", "Development Status :: 4- Beta"
+        ],
         description="A general reader writer for CASTEP inputs",
         url="https://gitlab.com/bz1/castepiputs",
         license="MIT License",
         version="0.1.0",
-    )
+        install_requires=["numpy"])

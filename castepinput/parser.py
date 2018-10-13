@@ -40,12 +40,7 @@ class PlainParser(object):
         Parameters:
         :params lines: A list of the file content or name of a file to be read
         """
-        self._init(lines)
 
-    def _init(self, lines):
-        """
-        Initialize storage space
-        """
         if isinstance(lines, (list, tuple)):
             self._raw_lines = lines  # Raw input lines
         else:
@@ -56,11 +51,11 @@ class PlainParser(object):
             self._raw_lines = lin
         self._init_storage()
 
-    def _init_storage(self):
         self._lines = []  # Processed lines
         self._kwlines = []  # key-value paired lines
         self._blocks = {}  # A dictionary of blocks
         self._keywords = {}  # A dictionary of key value pairs
+        self._comments = []
 
     def parse(self):
         """
