@@ -49,7 +49,6 @@ class PlainParser(object):
                 for line in fh:
                     lin.append(line.strip())
             self._raw_lines = lin
-        self._init_storage()
 
         self._lines = []  # Processed lines
         self._kwlines = []  # key-value paired lines
