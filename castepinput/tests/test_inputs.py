@@ -15,6 +15,7 @@ def basic_input():
     c["a"] = "a"
     c["b"] = Block(["a", "b"])
     c["c"] = 5
+    c["d"] = [2, 2, 2]
     return c
 
 

@@ -48,9 +48,10 @@ class CastepInput(OrderedDict):
                 for v in value:
                     lines.append(v)
                 lines.append("%ENDBLOCK {}".format(key))
-            elif isinstance(value, (tuple, list)):
-                raise RuntimeError("List is not allowed. Please use Block type")
             else:
+                # If a list/tuple is passed join into a string
+                if isinstance(value, (tuple, list)):
+                    value = " ".join(map(str, value))
                 l = "{:<20}: {}".format(key, value)
                 if key in self.units:
                     l = l + " " + self.units[key]
