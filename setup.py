@@ -20,7 +20,7 @@ if __name__ == '__main__':
             "Development Status :: 4 - Beta"
         ],
         description="A general reader writer for CASTEP inputs",
-        url="https://gitlab.com/bz1/castepiputs",
+        url="https://gitlab.com/bz1/castepiput",
         license="MIT License",
-        version="0.1.0",
+        version="0.1.1",
         install_requires=["numpy"])
