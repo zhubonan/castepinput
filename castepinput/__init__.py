@@ -1,4 +1,4 @@
 """
-Base module of castepinputs
+Base module of castepinput
 """
 from .inputs import ParamInput, CellInput
