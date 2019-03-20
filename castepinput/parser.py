@@ -263,8 +263,6 @@ class Converter(object):
             out = value
         else:
             success = True
-        if not out:
-            out = ""  # Use entry string for default
 
         return success, out
 
@@ -277,12 +275,18 @@ def booltest(value):
     else:
         raise ValueError
 
+def emptystrtest(value):
+    """Rule for empty string to be empty string"""
+    if value == "":
+        return value
+
 
 intconv = Converter(int)
 floatconv = Converter(float)
 intarrayconv = Converter(lambda x: list(map(int, x.split())))
 floatarrayconv = Converter(lambda x: list(map(float, x.split())))
 boolconv = Converter(booltest)
+emptyconv = Converter(emptystrtest)
 
 
 def convert_type_kw(value, key=None):
@@ -291,7 +295,8 @@ def convert_type_kw(value, key=None):
     """
 
     # Check if it is bool
-    convs = [boolconv, intconv, floatconv, intarrayconv, floatarrayconv]
+    convs = [emptyconv, boolconv, intconv, floatconv, intarrayconv,
+             floatarrayconv]
     for c in convs:
         success, value = c.convert(value)
         if success:
