@@ -22,5 +22,5 @@ if __name__ == '__main__':
         description="A general reader writer for CASTEP inputs",
         url="https://gitlab.com/bz1/castepinput",
         license="MIT License",
-        version="0.1.2",
+        version="0.1.3",
         install_requires=["numpy"])
