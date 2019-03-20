@@ -23,7 +23,7 @@ COMMENT_SYMBOLS = ["#", "!"]
 # RE for separating blocks
 block_start = re.compile(r"%block (\w+)", flags=re.IGNORECASE)
 block_finish = re.compile(r"%endblock (\w+)", flags=re.IGNORECASE)
-kw_split = re.compile(r"[ :=]+")
+kw_split = re.compile(r"[ \t:=]+")
 
 
 class PlainParser(object):
