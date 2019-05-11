@@ -15,8 +15,10 @@ To stardardise data parsed. Output follows the convension
 from __future__ import print_function
 from __future__ import division
 
+from __future__ import absolute_import
 import re
 from .common import Block, FormatError
+from six.moves import map
 
 COMMENT_SYMBOLS = ["#", "!"]
 

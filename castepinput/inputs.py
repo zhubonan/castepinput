@@ -1,10 +1,13 @@
 """
 Classes for .param and .cell files
 """
+from __future__ import absolute_import
 from collections import OrderedDict
 import numpy as np
 from .parser import Parser, PlainParser
 from .common import Block, cell_abcs_to_vec
+from six.moves import map
+from six.moves import zip
 
 
 

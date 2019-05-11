@@ -2,6 +2,7 @@
 Module for some shared things
 """
 from __future__ import division, print_function
+from __future__ import absolute_import
 from math import sin, cos, pi, sqrt
 
 import numpy as np

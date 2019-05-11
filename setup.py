@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from setuptools import setup, find_packages
 from os import path
 
@@ -22,5 +23,5 @@ if __name__ == '__main__':
         description="A general reader writer for CASTEP inputs",
         url="https://gitlab.com/bz1/castepinput",
         license="MIT License",
-        version="0.1.3",
-        install_requires=["numpy"])
+        version="0.1.4",
+        install_requires=["numpy", "six"])

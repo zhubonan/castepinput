@@ -2,6 +2,7 @@
 Tests for the common module
 """
 
+from __future__ import absolute_import
 import numpy as np
 import castepinput.common as common
 import pytest

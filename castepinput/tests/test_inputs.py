@@ -2,11 +2,13 @@
 Test module for the inputs
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import os
 from castepinput.inputs import CastepInput, CellInput
 from castepinput.inputs import Block, parse_pos_line, construct_pos_line
 import pytest
 import numpy as np
+from six.moves import zip
 
 
 current_path = os.path.split(__file__)[0]
