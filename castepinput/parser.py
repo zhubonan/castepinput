@@ -242,6 +242,10 @@ class Parser(PlainParser):
         self._keywords = new_keywords
 
 
+class CannotConverError(ValueError):
+    pass
+
+
 class Converter(object):
     """
     Class for convert that convert types
@@ -273,12 +277,15 @@ def booltest(value):
     elif value.lower() == "false":
         return True
     else:
-        raise ValueError
+        raise CannotConverError
+
 
 def emptystrtest(value):
     """Rule for empty string to be empty string"""
     if value == "":
         return value
+    else:
+        raise CannotConverError
 
 
 intconv = Converter(int)
@@ -295,11 +302,11 @@ def convert_type_kw(value, key=None):
     """
 
     # Check if it is bool
-    convs = [emptyconv, boolconv, intconv, floatconv, intarrayconv,
-             floatarrayconv]
+    convs = [
+        emptyconv, boolconv, intconv, floatconv, intarrayconv, floatarrayconv
+    ]
     for c in convs:
-        success, value = c.convert(value)
+        success, out = c.convert(value)
         if success:
-            break
-
+            return out
     return value
