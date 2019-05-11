@@ -25,3 +25,4 @@ if __name__ == '__main__':
         license="MIT License",
         version="0.1.4",
         install_requires=["numpy", "six"])
+
