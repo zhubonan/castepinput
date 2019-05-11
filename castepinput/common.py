@@ -33,7 +33,6 @@ class Block(list):
             return f
 
 
-
 def cell_abcs_to_vec(abcs):
     """
     Convert fractional cell format to vectors.
@@ -56,7 +55,7 @@ def cell_abcs_to_vec(abcs):
     if abs(abs(beta) - 90) < e:
         cos_beta = 0.0
     else:
-        cos_beta = cos(alpha * pi / 180)
+        cos_beta = cos(beta * pi / 180)
 
     if abs(gamma - 90) < e:
         cos_gamma = 0.0
