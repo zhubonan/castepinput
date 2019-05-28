@@ -45,5 +45,6 @@ if __name__ == '__main__':
         url="https://gitlab.com/bz1/castepinput",
         license="MIT License",
         version=version,
+        extras_require={'testing': ['pytest']},
         install_requires=["numpy", "six"])
 
