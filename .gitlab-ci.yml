@@ -41,4 +41,3 @@ deploy_production:
     - twine upload dist/*
   only:
     - tags
-    - master
