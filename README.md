@@ -15,7 +15,7 @@ Keyword-value pairs can be set the same as dictionaries.
 For example:
 
 ```python
-from castepinput import CellInput, ParamInput
+from castepinput import CellInput, ParamInput, Block
 # ParamInput is in fact just a subclass of OrderedDict
 param = ParamInput(cut_off_energy=300, task="singlepoint")
 param["opt_strategy"] = "speed"
