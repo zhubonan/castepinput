@@ -11,13 +11,21 @@ from castepinput.parser import Block
 current_path = os.path.split(__file__)[0]
 
 lines_example = [
-    "fix_all_cell:True", "kpoints_mp_grid=4 4 4 # Foo",
-    "cut_off_Energy 300   #Bar", "xc_functional :  pbesol", "SYMMETRY_GENERATE"
+    "fix_all_cell:True",
+    "kpoints_mp_grid=4 4 4 # Foo",
+    "cut_off_Energy 300   #Bar",
+    "xc_functional :  pbesol",
+    "SYMMETRY_GENERATE",
+    "fixed_occupancy : false",
 ]
 
 expected_lines = [
-    "fix_all_cell:True", "kpoints_mp_grid=4 4 4", "cut_off_Energy 300",
-    "xc_functional :  pbesol", "SYMMETRY_GENERATE"
+    "fix_all_cell:True",
+    "kpoints_mp_grid=4 4 4",
+    "cut_off_Energy 300",
+    "xc_functional :  pbesol",
+    "SYMMETRY_GENERATE",
+    "fixed_occupancy : false",
 ]
 
 expected_comments = ["Foo", "Bar"]
@@ -29,8 +37,10 @@ expected_kw_dict = {
     "kpoints_mp_grid": "4 4 4",
     "cut_off_energy": "300",
     "xc_functional": "pbesol",
-    "symmetry_generate": ""
+    "symmetry_generate": "",
+    "fixed_occupancy": "false",
 }
+
 expected_block_dict = {"species_pot": Block(["O C9"])}
 
 
@@ -84,5 +94,8 @@ def test_cell_parser(parser):
     out_dict = parser.get_dict()
     assert out_dict["kpoints_mp_grid"] == [4, 4, 4]
     assert "Foo" in parser.comments
-
-
+    assert out_dict["fixed_occupancy"] is False
+    assert out_dict["fix_all_cell"] is True
+    assert out_dict["cut_off_energy"] == 300
+    assert out_dict["xc_functional"] == "pbesol"
+    assert out_dict["symmetry_generate"] == ""

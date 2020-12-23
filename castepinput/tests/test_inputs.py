@@ -20,6 +20,8 @@ def basic_input():
     c["c"] = 5
     c["d"] = [2, 2, 2]
     c["e"] = ""
+    c["f"] = True
+    c["g"] = False
     return c
 
 
@@ -33,12 +35,18 @@ def test_input_gen(basic_input):
     """
     Test basic function of generate inputs
     """
+    def split_line(line):
+        return [tmp.strip() for tmp in line.split(':')]
     lines = basic_input.get_file_lines()
     assert lines[0].split(":")[0].strip() == "a"
     assert lines[0].split(":")[1].strip() == "a"
     assert lines[1].startswith("%")
     assert lines[4].startswith("%")
-
+    assert split_line(lines[5]) == ['c', '5']
+    assert split_line(lines[6]) == ['d', '2 2 2']
+    assert split_line(lines[7]) == ['e']
+    assert split_line(lines[8]) == ['f', 'True']
+    assert split_line(lines[9]) == ['g', 'False']
 
 def test_header(basic_input):
     """
