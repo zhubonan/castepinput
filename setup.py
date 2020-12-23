@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 from os import path
 import os
 
-version = '0.1.5'
+version = '0.1.6'
 if __name__ == '__main__':
 
     # Check if in a CI environment
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         long_description_content_type='text/markdown',
         name='castepinput',
         author='Bonan Zhu',
-        author_email='bon.zhu@protonmail.com',
+        author_email='zhubonan@outlook.com',
         classifiers=[
             "Programming Language :: Python :: 3.5",
             "Programming Language :: Python :: 3.6",
@@ -44,7 +44,7 @@ if __name__ == '__main__':
             "Development Status :: 4 - Beta"
         ],
         description="A general reader/writer for CASTEP inputs",
-        url="https://github.com/bz1/castepinput",
+        url="https://github.com/zhubonan/castepinput",
         license="MIT License",
         version=version,
         extras_require={'testing': ['pytest']},

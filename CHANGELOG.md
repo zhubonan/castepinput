@@ -26,3 +26,8 @@ Added tab(\t) to the regex for delimiter when parsing keyword-values.
 -----
 
 * Fix bugs where tags with `False` values ignored when reading and wrongly set to `True` when writing. This affects input/output using python types.
+
+0.1.6
+-----
+
+* minor package metadata updates
