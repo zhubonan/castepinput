@@ -274,10 +274,10 @@ class Converter(object):
 
 
 def booltest(value):
-    if value.lower() == "true":
+    if value.lower().strip() == "true":
         return True
-    elif value.lower() == "false":
-        return True
+    elif value.lower().strip() == "false":
+        return False
     else:
         raise CannotConverError
 

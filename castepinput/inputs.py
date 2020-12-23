@@ -55,7 +55,7 @@ class CastepInput(OrderedDict):
                 # If a list/tuple is passed join into a string
                 if isinstance(value, (tuple, list)):
                     value = " ".join(map(str, value))
-                if value:
+                if value is not None and value is not "":
                     l = "{:<20}: {}".format(key, value)
                 else:
                     l = key
