@@ -21,7 +21,7 @@ if __name__ == '__main__':
     if ci_version:
         # If this a release, check the consistency
         if is_tagged:
-            assert ci_version == version, 'Inonsistency between versions'
+            assert ci_version == version, 'Inconsistency between versions'
         else:
             version = ci_version
 
@@ -37,14 +37,15 @@ if __name__ == '__main__':
         author='Bonan Zhu',
         author_email='bon.zhu@protonmail.com',
         classifiers=[
-            "Programming Language :: Python :: 2.7",
             "Programming Language :: Python :: 3.5",
+            "Programming Language :: Python :: 3.6",
+            "Programming Language :: Python :: 3.7",
+            "Programming Language :: Python :: 3.8",
             "Development Status :: 4 - Beta"
         ],
         description="A general reader/writer for CASTEP inputs",
-        url="https://gitlab.com/bz1/castepinput",
+        url="https://github.com/bz1/castepinput",
         license="MIT License",
         version=version,
         extras_require={'testing': ['pytest']},
         install_requires=["numpy", "six"])
-
