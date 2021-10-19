@@ -10,7 +10,6 @@ from six.moves import map
 from six.moves import zip
 
 
-
 class CastepInput(OrderedDict):
     """
     Class for storing key - values pairs of CASTEP inputs
@@ -55,7 +54,8 @@ class CastepInput(OrderedDict):
                 # If a list/tuple is passed join into a string
                 if isinstance(value, (tuple, list)):
                     value = " ".join(map(str, value))
-                if value is not None and value is not "":
+                # None and "" are treats as simple flag line e.g. SYMMETRY_GENERATE
+                if value is not None and value != "":
                     l = "{:<20}: {}".format(key, value)
                 else:
                     l = key
@@ -113,7 +113,6 @@ class ParamInput(CastepInput):
 
 
 class CellInput(CastepInput):
-
     def get_cell(self):
         """Return cell vectors"""
 
@@ -152,7 +151,6 @@ class CellInput(CastepInput):
         if not pos_lines:
             raise RuntimeError("No positions defined")
 
-
         elems = []
         pos = []
         tags = []
@@ -171,23 +169,22 @@ class CellInput(CastepInput):
 
         return elems, pos, tags
 
-
     def set_cell(self, cell):
         """
         Set cell. Accept a length 3 list/array or 3x3 list/array.
         """
         cell_lines = Block()
         cell = np.asarray(cell)
-        if cell.shape == (3,):
+        if cell.shape == (3, ):
             cell = np.diag(cell)
         if cell.shape != (3, 3):
-            raise ValueError("Cell must be a 3x3 matrix. But {} is given".format(cell))
+            raise ValueError(
+                "Cell must be a 3x3 matrix. But {} is given".format(cell))
 
         for x in cell:
             cell_lines.append("{:.10f}  {:.10f}  {:.10f}".format(*x))
 
         self.__setitem__("lattice_cart", Block(cell_lines))
-
 
     def set_positions(self, elements, positions, tags=None, frac=False):
         """
@@ -235,6 +232,4 @@ def construct_pos_line(elem, coor, tags):
     """
     line = "{elem}  {x:.10f} {y:.10f} {z:.10f} {tags}"
 
-    return line.format(elem=elem, x=coor[0], y=coor[1], z=coor[2],
-                       tags=tags)
-
+    return line.format(elem=elem, x=coor[0], y=coor[1], z=coor[2], tags=tags)
