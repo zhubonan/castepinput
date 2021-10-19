@@ -11,16 +11,10 @@ To stardardise data parsed. Output follows the convension
 3. case of the values themselves are not affected
 4. content of the blocks are not affected
 """
-
-from __future__ import print_function
-from __future__ import division
-
-from __future__ import absolute_import
 import re
 from .common import Block, FormatError
-from six.moves import map
 
-COMMENT_SYMBOLS = ["#", "!"]
+COMMENT_SYMBOLS = ("#", "!")
 
 # RE for separating blocks
 block_start = re.compile(r"%block (\w+)", flags=re.IGNORECASE)
@@ -28,12 +22,11 @@ block_finish = re.compile(r"%endblock (\w+)", flags=re.IGNORECASE)
 kw_split = re.compile(r"[ \t:=]+")
 
 
-class PlainParser(object):
+class PlainParser:
     """
     Base parser class
     Does nothing fancy, basic text processing
     """
-
     def __init__(self, lines):
         """
         Parser for cell/param files for castep.
@@ -46,9 +39,9 @@ class PlainParser(object):
         if isinstance(lines, (list, tuple)):
             self._raw_lines = lines  # Raw input lines
         else:
-            with open(lines) as fh:
+            with open(lines) as fhandle:
                 lin = []
-                for line in fh:
+                for line in fhandle:
                     lin.append(line.strip())
             self._raw_lines = lin
 
@@ -75,8 +68,7 @@ class PlainParser(object):
     def comments(self):
         if self._comments is None:
             raise RuntimeError("File is not parsed")
-        else:
-            return self._comments
+        return self._comments
 
     def _clean_up_lines(self):
         """
@@ -101,14 +93,13 @@ class PlainParser(object):
                 continue
 
             # Check if there is any trailing comments
-            for s in COMMENT_SYMBOLS:
-                pos = line.find(s)
+            for symbol in COMMENT_SYMBOLS:
+                pos = line.find(symbol)
                 if pos != -1:
                     comments.append(line[pos + 1:].strip())
                     cld_line = line[:pos].strip()  # Remove trailing space
                     break
-                else:
-                    cld_line = line
+                cld_line = line
             cleaned_lines.append(cld_line)
 
         self._lines = cleaned_lines
@@ -149,13 +140,13 @@ class PlainParser(object):
                 if in_block is False:
                     raise FormatError("Start of block {} not"
                                       " found".format(end_name))
-                elif end_name != start_name:
+                if end_name != start_name:
                     raise FormatError("Mismatch block names, start: {}"
                                       " finish: {}".format(
                                           start_name, end_name))
-                else:
-                    block_indices[start_name] = (start, finish)
-                    in_block = False
+                # Push the content of the push into the main container
+                block_indices[start_name] = (start, finish)
+                in_block = False
                 continue
 
             if not in_block:
@@ -179,11 +170,11 @@ class PlainParser(object):
         """Parse keyword, value pairs"""
         out_dict = {}
         for line in self._kwlines:
-            s = kw_split.split(line, 1)
-            if len(s) == 2:
-                key, value = s
-            elif len(s) == 1:
-                key = s[0]
+            tokens = kw_split.split(line, 1)
+            if len(tokens) == 2:
+                key, value = tokens
+            elif len(tokens) == 1:
+                key = tokens[0]
                 value = ""  # Empty string for key without values
             else:
                 raise FormatError("Cannot parse into key-value"
@@ -213,8 +204,6 @@ class Parser(PlainParser):
     Try to convert data types
     bool >> int >> float >> plain text
     """
-    _CONVERT_TYPE = True
-
     def __init__(self, lines, convert_type=True):
         """
         Initialize the parser by passing either:
@@ -224,7 +213,7 @@ class Parser(PlainParser):
         :param convert_type: Either try to convert the types or not
         """
         super(Parser, self).__init__(lines)
-        self._CONVERT_TYPE = convert_type
+        self._convert_type = convert_type
 
     def parse(self):
         """
@@ -232,7 +221,7 @@ class Parser(PlainParser):
         Also will try to convert the types if requested
         """
         super(Parser, self).parse()
-        if self._CONVERT_TYPE is False:
+        if self._convert_type is False:
             return self._keywords
 
         old_keywords = self._keywords
@@ -242,13 +231,14 @@ class Parser(PlainParser):
             new_keywords[key] = convert_type_kw(value, key)
 
         self._keywords = new_keywords
+        return None
 
 
 class CannotConverError(ValueError):
     pass
 
 
-class Converter(object):
+class Converter:
     """
     Class for convert that convert types
     """
@@ -261,6 +251,12 @@ class Converter(object):
         self.convert_func = func
 
     def convert(self, value):
+        """
+        Convert a string into python object
+
+        Return a tuple of (success, output)
+        """
+
         assert isinstance(value, str)
         try:
             out = self.convert_func(value)
@@ -274,20 +270,19 @@ class Converter(object):
 
 
 def booltest(value):
+    """Test if a string value is a Bool"""
     if value.lower().strip() == "true":
         return True
-    elif value.lower().strip() == "false":
+    if value.lower().strip() == "false":
         return False
-    else:
-        raise CannotConverError
+    raise CannotConverError
 
 
 def emptystrtest(value):
     """Rule for empty string to be empty string"""
     if value == "":
         return value
-    else:
-        raise CannotConverError
+    raise CannotConverError
 
 
 intconv = Converter(int)
@@ -302,13 +297,15 @@ def convert_type_kw(value, key=None):
     """
     Try to convert type of the value
     """
+    # the key argument is not used for now - reserve for per-key treatment
+    _ = key
 
-    # Check if it is bool
+    # Note that the order of which these converters are call matters
     convs = [
         emptyconv, boolconv, intconv, floatconv, intarrayconv, floatarrayconv
     ]
-    for c in convs:
-        success, out = c.convert(value)
+    for converter in convs:
+        success, out = converter.convert(value)
         if success:
             return out
     return value

@@ -1,17 +1,15 @@
 """
 Test module for the inputs
 """
-from __future__ import print_function
-from __future__ import absolute_import
 import os
 from castepinput.inputs import CastepInput, CellInput
 from castepinput.inputs import Block, parse_pos_line, construct_pos_line
 import pytest
 import numpy as np
-from six.moves import zip
-
 
 current_path = os.path.split(__file__)[0]
+
+
 @pytest.fixture
 def basic_input():
     c = CastepInput()
@@ -31,12 +29,14 @@ def cell_input():
     c["symmetry_generate"] = True
     return c
 
+
 def test_input_gen(basic_input):
     """
     Test basic function of generate inputs
     """
     def split_line(line):
         return [tmp.strip() for tmp in line.split(':')]
+
     lines = basic_input.get_file_lines()
     assert lines[0].split(":")[0].strip() == "a"
     assert lines[0].split(":")[1].strip() == "a"
@@ -47,6 +47,7 @@ def test_input_gen(basic_input):
     assert split_line(lines[7]) == ['e']
     assert split_line(lines[8]) == ['f', 'True']
     assert split_line(lines[9]) == ['g', 'False']
+
 
 def test_header(basic_input):
     """
@@ -120,6 +121,7 @@ def test_pos_lines():
     for a in zip(r, [elem, pos, tags]):
         assert a[0] == a[1]
 
+
 def test_input_pos_lines(cell_input):
     """
     Rest construction and presing of positions lines
@@ -144,6 +146,7 @@ def visual_inspect(inp):
     print(inp.get_string())
     print("\n\nEND OF Visual inspection")
 
+
 def test_set_cell(cell_input):
     """
     Test set_cell method
@@ -165,6 +168,7 @@ def test_set_cell(cell_input):
     with pytest.raises(ValueError):
         cell_input.set_cell([1, 2, 3, 4])
 
+
 def test_set_pos(cell_input):
     """
     Test set_positions method
@@ -179,20 +183,17 @@ def test_set_pos(cell_input):
 
 @pytest.mark.parametrize("data, expected",
                          [[
-                             1,
-                             {
+                             1, {
                                  "pos": [[1, 1, 1], [2, 2, 2]],
                                  "cell": [[4, 0, 0], [0, 4, 0], [0, 0, 4]]
                              }
                          ],
                           [
-                              2,
-                              {
+                              2, {
                                   "pos": [[0, 0, 0], [1, 1, 1]],
                                   "cell": [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
                               }
                           ]])
-
 def test_cell_and_pos(data, expected):
     cin = CellInput.from_file(
         os.path.join(current_path, 'data/cell_example_{}.cell'.format(data)))

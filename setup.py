@@ -53,4 +53,4 @@ if __name__ == '__main__':
                   "pylint==2.4.4; python_version>='3.0'", "pylint-pytest"
               ],
           },
-          install_requires=["numpy", "six"])
+          install_requires=["numpy"])
