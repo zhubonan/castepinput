@@ -1,13 +1,14 @@
 """
 Classes for .param and .cell files
 """
-from __future__ import absolute_import
+import os
+import tempfile
+import re
 from collections import OrderedDict
+
 import numpy as np
 from .parser import Parser, PlainParser
 from .common import Block, cell_abcs_to_vec
-from six.moves import map
-from six.moves import zip
 
 
 class CastepInput(OrderedDict):
@@ -36,19 +37,21 @@ class CastepInput(OrderedDict):
         Return a list of strings to be write out to the files
         """
         lines = []
-        for h in self.header:
-            if not h.startswith("#"):
-                lines.append("# " + h)
+        for hline in self.header:
+            if not hline.startswith("#"):
+                lines.append("# " + hline)
             else:
-                lines.append(h)
+                lines.append(hline)
 
         for key, value in self.items():
             if isinstance(value, Block):
                 lines.append("%BLOCK {}".format(key))
+                # Add units
                 if key in self.units:
                     lines.append("{}".format(self.units[key]))
-                for v in value:
-                    lines.append(v)
+                # Append each line
+                for val in value:
+                    lines.append(val)
                 lines.append("%ENDBLOCK {}".format(key))
             else:
                 # If a list/tuple is passed join into a string
@@ -56,42 +59,42 @@ class CastepInput(OrderedDict):
                     value = " ".join(map(str, value))
                 # None and "" are treats as simple flag line e.g. SYMMETRY_GENERATE
                 if value is not None and value != "":
-                    l = "{:<20}: {}".format(key, value)
+                    this_line = "{:<20}: {}".format(key, value)
                 else:
-                    l = key
+                    this_line = key
                 if key in self.units:
-                    l = l + " " + self.units[key]
-                lines.append(l)
+                    this_line = this_line + " " + self.units[key]
+                lines.append(this_line)
 
         return lines
 
     def get_string(self):
         return "\n".join(self.get_file_lines())
 
-    def save(self, fh):
-        with open(fh, "w") as fh:
-            fh.write(self.get_string())
+    def save(self, fname):
+        with open(fname, "w") as fhandle:
+            fhandle.write(self.get_string())
 
     @classmethod
-    def from_file(cls, fn, plain=False):
+    def from_file(cls, fname, plain=False):
         """
         Constrant an instance from the file
         """
         out = cls()
-        out.load_file(fn, plain)
+        out.load_file(fname, plain)
         return out
 
-    def load_file(self, fn, plain=False):
+    def load_file(self, fname, plain=False):
         """
         Load from the file
         """
-        with open(fn) as fh:
-            lines = fh.readlines()
+        with open(fname) as fhandle:
+            lines = fhandle.readlines()
         if plain:
-            p = PlainParser(lines)
+            parser = PlainParser(lines)
         else:
-            p = Parser(lines)
-        dict_out = p.get_dict()
+            parser = Parser(lines)
+        dict_out = parser.get_dict()
         for k, value in dict_out.items():
             self.__setitem__(k, value)
 
@@ -99,8 +102,6 @@ class CastepInput(OrderedDict):
         """
         Adhoc test of readin and writing
         """
-        import tempfile
-        import os
         outname = os.path.join(tempfile.mkdtemp(), "test.in")
         self.save(outname)
         input2 = type(self)()
@@ -113,6 +114,9 @@ class ParamInput(CastepInput):
 
 
 class CellInput(CastepInput):
+    """
+    Representation for the content in `<seed>.cell` file.
+    """
     def get_cell(self):
         """Return cell vectors"""
 
@@ -120,15 +124,15 @@ class CellInput(CastepInput):
         if "lattice_cart" in self:
             cell_lines = self['lattice_cart']
 
-            for l in cell_lines:
-                cell.append([float(v) for v in l.split()])
+            for line in cell_lines:
+                cell.append([float(val) for val in line.split()])
 
         elif "lattice_abc" in self:
             abc_lines = self['lattice_abc']
 
             abc = []
-            for l in abc_lines:
-                abc.extend([float(v) for v in l.split()])
+            for line in abc_lines:
+                abc.extend([float(val) for val in line.split()])
             assert len(abc) == 6, "Problem in lattice_abc block"
 
             cell = cell_abcs_to_vec(abc)
@@ -154,11 +158,11 @@ class CellInput(CastepInput):
         elems = []
         pos = []
         tags = []
-        for l in pos_lines:
-            e, p, t = parse_pos_line(l)
-            elems.append(e)
-            pos.append(p)
-            tags.append(t)
+        for line in pos_lines:
+            elem, parser, tag = parse_pos_line(line)
+            elems.append(elem)
+            pos.append(parser)
+            tags.append(tag)
 
         pos = np.array(pos)
 
@@ -181,8 +185,8 @@ class CellInput(CastepInput):
             raise ValueError(
                 "Cell must be a 3x3 matrix. But {} is given".format(cell))
 
-        for x in cell:
-            cell_lines.append("{:.10f}  {:.10f}  {:.10f}".format(*x))
+        for coord in cell:
+            cell_lines.append("{:.10f}  {:.10f}  {:.10f}".format(*coord))
 
         self.__setitem__("lattice_cart", Block(cell_lines))
 
@@ -198,8 +202,8 @@ class CellInput(CastepInput):
         pos_lines = Block()
         if not tags:
             tags = [""] * len(elements)
-        for e, p, t in zip(elements, positions, tags):
-            pos_lines.append(construct_pos_line(e, p, t))
+        for elem, parser, tag in zip(elements, positions, tags):
+            pos_lines.append(construct_pos_line(elem, parser, tag))
 
         self.__setitem__(bname, Block(pos_lines))
 
@@ -210,18 +214,18 @@ def parse_pos_line(cell_line):
     Return element, coorindates and a dictionary of tags
     """
 
-    import re
     cell_line = cell_line.strip()
-    s = re.split(r"[\s]+", cell_line, maxsplit=4)
-    if len(s) < 4:
+    tokens = re.split(r"[\s]+", cell_line, maxsplit=4)
+    if len(tokens) < 4:
         raise ValueError("Cannot understand line: {}".format(cell_line))
-    if len(s) == 5:
-        tags = s[-1]
+    # There are trailing tags here
+    if len(tokens) == 5:
+        tags = tokens[-1]
     else:
         tags = ""
 
-    elem = s[0].capitalize()
-    coor = list(map(float, s[1:4]))
+    elem = tokens[0].capitalize()
+    coor = list(map(float, tokens[1:4]))
 
     return elem, coor, tags
 
