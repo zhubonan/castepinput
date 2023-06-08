@@ -7,6 +7,8 @@ from math import sin, cos, pi, sqrt
 
 import numpy as np
 
+# pylint: disable=invalid-name
+
 
 class FormatError(RuntimeError):
     pass
@@ -16,10 +18,9 @@ class Block(list):
     """
     A class for blocks in CASTEP inputs files stored as a list of strings
     """
-
     def __repr__(self):
-        r = super(Block, self).__repr__()
-        return "Block(" + r + ")"
+        r = super().__repr__()
+        return 'Block(' + r + ')'
 
     def compact(self, inplace=False):
         """
@@ -30,8 +31,7 @@ class Block(list):
             del self[:]
             self.extend(f)
             return self
-        else:
-            return f
+        return f
 
 
 def cell_abcs_to_vec(abcs):

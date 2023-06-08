@@ -14,12 +14,12 @@ To stardardise data parsed. Output follows the convension
 import re
 from .common import Block, FormatError
 
-COMMENT_SYMBOLS = ("#", "!")
+COMMENT_SYMBOLS = ('#', '!')
 
 # RE for separating blocks
-block_start = re.compile(r"%block (\w+)", flags=re.IGNORECASE)
-block_finish = re.compile(r"%endblock (\w+)", flags=re.IGNORECASE)
-kw_split = re.compile(r"[ \t:=]+")
+block_start = re.compile(r'%block (\w+)', flags=re.IGNORECASE)
+block_finish = re.compile(r'%endblock (\w+)', flags=re.IGNORECASE)
+kw_split = re.compile(r'[ \t:=]+')
 
 
 class PlainParser:
@@ -39,7 +39,7 @@ class PlainParser:
         if isinstance(lines, (list, tuple)):
             self._raw_lines = lines  # Raw input lines
         else:
-            with open(lines) as fhandle:
+            with open(lines, encoding='utf-8') as fhandle:
                 lin = []
                 for line in fhandle:
                     lin.append(line.strip())
@@ -67,7 +67,7 @@ class PlainParser:
     @property
     def comments(self):
         if self._comments is None:
-            raise RuntimeError("File is not parsed")
+            raise RuntimeError('File is not parsed')
         return self._comments
 
     def _clean_up_lines(self):
@@ -126,8 +126,8 @@ class PlainParser:
             start_match = block_start.match(line)
             if start_match:
                 if in_block is True:
-                    raise FormatError("End of block {}"
-                                      " is not detected".format(start_name))
+                    raise FormatError(f'End of block {start_name}'
+                                      ' is not detected')
                 start = i
                 in_block = True
                 start_name = start_match.group(1).lower()
@@ -138,12 +138,12 @@ class PlainParser:
                 finish = i
                 end_name = end_match.group(1).lower()
                 if in_block is False:
-                    raise FormatError("Start of block {} not"
-                                      " found".format(end_name))
+                    raise FormatError(f'Start of block {end_name} not'
+                                      ' found')
                 if end_name != start_name:
-                    raise FormatError("Mismatch block names, start: {}"
-                                      " finish: {}".format(
-                                          start_name, end_name))
+                    raise FormatError(
+                        f'Mismatch block names, start: {start_name}'
+                        f' finish: {end_name}')
                 # Push the content of the push into the main container
                 block_indices[start_name] = (start, finish)
                 in_block = False
@@ -153,8 +153,7 @@ class PlainParser:
                 kwlines.append(line)
 
         if in_block is True:
-            raise FormatError("End of block {}"
-                              " not detected".format(start_name))
+            raise FormatError(f'End of block {start_name}' ' not detected')
 
         # Now extract block contents
         blocks = {}
@@ -175,12 +174,12 @@ class PlainParser:
                 key, value = tokens
             elif len(tokens) == 1:
                 key = tokens[0]
-                value = ""  # Empty string for key without values
+                value = ''  # Empty string for key without values
             else:
-                raise FormatError("Cannot parse into key-value"
-                                  " pair {}".format(line))
+                raise FormatError(
+                    f'Cannot parse into key-value pair in: {line}')
             if not value:
-                value = ""
+                value = ''
 
             out_dict[key.lower()] = value
         self._keywords = out_dict
@@ -212,7 +211,7 @@ class Parser(PlainParser):
 
         :param convert_type: Either try to convert the types or not
         """
-        super(Parser, self).__init__(lines)
+        super().__init__(lines)
         self._convert_type = convert_type
 
     def parse(self):
@@ -220,7 +219,7 @@ class Parser(PlainParser):
         Parse the contents
         Also will try to convert the types if requested
         """
-        super(Parser, self).parse()
+        super().parse()
         if self._convert_type is False:
             return self._keywords
 
@@ -234,7 +233,7 @@ class Parser(PlainParser):
         return None
 
 
-class CannotConverError(ValueError):
+class CannotConvertError(ValueError):
     pass
 
 
@@ -271,18 +270,18 @@ class Converter:
 
 def booltest(value):
     """Test if a string value is a Bool"""
-    if value.lower().strip() == "true":
+    if value.lower().strip() == 'true':
         return True
-    if value.lower().strip() == "false":
+    if value.lower().strip() == 'false':
         return False
-    raise CannotConverError
+    raise CannotConvertError
 
 
 def emptystrtest(value):
     """Rule for empty string to be empty string"""
-    if value == "":
+    if value == '':
         return value
-    raise CannotConverError
+    raise CannotConvertError
 
 
 intconv = Converter(int)

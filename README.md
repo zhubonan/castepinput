@@ -1,11 +1,11 @@
 A simple CASTEP input files parser/writer
 ==========================
 This package provide a basic framework for read/write input files of CASTEP.
-There is already a excellent reader/writer implemented in [ase](https://gitlab.com/ase/ase) 
-but they are ortentated to work with the `Atoms` and `Calculator` classes in `ase`. 
+There is already a excellent reader/writer implemented in [ase](https://gitlab.com/ase/ase)
+but they are ortentated to work with the `Atoms` and `Calculator` classes in `ase`.
 It also requires a CASTEP binary to exist to work.
-This package aim to provide a more generic framework with minimum dependency for 
-simple (but important) tasks of writing and reading inputs files of CASTEP.  
+This package aim to provide a more generic framework with minimum dependency for
+simple (but important) tasks of writing and reading inputs files of CASTEP.
 
 
 Usage
