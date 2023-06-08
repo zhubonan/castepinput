@@ -2,7 +2,6 @@
 Test parser
 """
 
-from __future__ import absolute_import
 import os
 import pytest
 from castepinput.parser import PlainParser, Parser
