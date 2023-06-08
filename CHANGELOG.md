@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-0.1.7
+0.1.8 (same as 0.1.7)
 -----
 
 * Add additonal empty lines after `%endblock`.
