@@ -172,7 +172,7 @@ class CellInput(CastepInput):
         if is_frac:
             # We need to multiple the positions with cells
             cell = self.get_cell()
-            pos = np.dot(cell, pos.T).T
+            pos = np.dot(pos, cell)
 
         return elems, pos, tags
 
