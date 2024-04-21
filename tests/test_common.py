@@ -8,8 +8,8 @@ from castepinput import common
 
 def test_block():
     """Test setting a block"""
-    b = common.Block(['1 1 1', '2 2 3 ', ''])
-    expect = ['1 1 1', '2 2 3']
+    b = common.Block(["1 1 1", "2 2 3 ", ""])
+    expect = ["1 1 1", "2 2 3"]
     c = b.compact()
     assert c == expect
     assert b != expect

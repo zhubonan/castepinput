@@ -18,9 +18,10 @@ class Block(list):
     """
     A class for blocks in CASTEP inputs files stored as a list of strings
     """
+
     def __repr__(self):
         r = super().__repr__()
-        return 'Block(' + r + ')'
+        return "Block(" + r + ")"
 
     def compact(self, inplace=False):
         """
@@ -72,7 +73,7 @@ def cell_abcs_to_vec(abcs):
     vb = b * np.array([cos_gamma, sin_gamma, 0])
     cx = cos_beta
     cy = (cos_alpha - cos_beta * cos_gamma) / sin_gamma
-    cz = sqrt(1. - cx * cx - cy * cy)
+    cz = sqrt(1.0 - cx * cx - cy * cy)
     vc = c * np.array([cx, cy, cz])
 
     cell = np.vstack([va, vb, vc])
