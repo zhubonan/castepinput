@@ -199,3 +199,19 @@ def test_cell_and_pos(data, expected):
     cin = CellInput.from_file(os.path.join(current_path, f"data/cell_example_{data}.cell"))
     assert cin.get_cell().tolist() == expected["cell"]
     assert cin.get_positions()[1].tolist() == expected["pos"]
+
+
+def test_input_serialization():
+    """Test serialization and deserialization of CellInput"""
+    cin = CellInput.from_file(os.path.join(current_path, "data/cell_example_1.cell"))
+    sdict = cin.as_dict()
+    cin_2 = cin.from_dict(sdict)
+    assert cin == cin_2
+    assert cin.to_json() == cin_2.to_json()
+
+
+def test_block_serialzation():
+    """Test serialization and deserialization of Block"""
+    b = Block(["a", "b", "c"])
+    b_new = b.from_dict(b.as_dict())
+    assert list(b) == list(b_new)
