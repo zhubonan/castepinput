@@ -30,8 +30,8 @@ class Block(MSONable, list):
         return d
 
     @classmethod
-    def from_dict(self, d):
-        return Block(d["strings"])
+    def from_dict(cls, d):
+        return cls(d["strings"])
 
     def compact(self, inplace=False):
         """

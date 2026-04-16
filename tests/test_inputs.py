@@ -205,13 +205,242 @@ def test_input_serialization():
     """Test serialization and deserialization of CellInput"""
     cin = CellInput.from_file(os.path.join(current_path, "data/cell_example_1.cell"))
     sdict = cin.as_dict()
-    cin_2 = cin.from_dict(sdict)
+    cin_2 = CellInput.from_dict(sdict)
     assert cin == cin_2
     assert cin.to_json() == cin_2.to_json()
 
 
-def test_block_serialzation():
+def test_block_serialization():
     """Test serialization and deserialization of Block"""
     b = Block(["a", "b", "c"])
-    b_new = b.from_dict(b.as_dict())
+    b_new = Block.from_dict(b.as_dict())
     assert list(b) == list(b_new)
+
+
+def test_block_assertion():
+    """Test that Block rejects non-string items"""
+    with pytest.raises(AssertionError):
+        Block([1, 2, 3])
+
+
+def test_unit_line_skipping(tmpdir):
+    """Test that unit lines in lattice and position blocks are skipped"""
+    cell_content = """\
+%BLOCK LATTICE_CART
+angs
+4 0 0
+0 4 0
+0 0 4
+%ENDBLOCK LATTICE_CART
+
+%BLOCK POSITIONS_ABS
+ang
+O 1 1 1
+Ce 2 2 2
+%ENDBLOCK POSITIONS_ABS
+"""
+    fname = str(tmpdir.join("test.cell"))
+    with open(fname, "w") as f:
+        f.write(cell_content)
+    cin = CellInput.from_file(fname)
+    assert cin.get_cell().tolist() == [[4, 0, 0], [0, 4, 0], [0, 0, 4]]
+    elems, pos, _ = cin.get_positions()
+    assert elems == ["O", "Ce"]
+    assert pos.tolist() == [[1, 1, 1], [2, 2, 2]]
+
+
+def test_set_cell_clears_abc(cell_input):
+    """Test that set_cell removes lattice_abc if present"""
+    cell_input["lattice_abc"] = Block(["10 10 10 90 90 90"])
+    cell_input.set_cell([[4, 0, 0], [0, 4, 0], [0, 0, 4]])
+    assert "lattice_abc" not in cell_input
+    assert "lattice_cart" in cell_input
+
+
+def test_set_positions_clears_other(cell_input):
+    """Test that set_positions removes the other type of positions block"""
+    cell_input["positions_frac"] = Block(["O 0 0 0"])
+    cell_input.set_positions(["Ce"], [[1, 1, 1]])
+    assert "positions_frac" not in cell_input
+    assert "positions_abs" in cell_input
+
+    cell_input.set_positions(["O"], [[0, 0, 0]], frac=True)
+    assert "positions_abs" not in cell_input
+    assert "positions_frac" in cell_input
+
+
+def test_serialization_preserves_header_and_units():
+    """Test that header and units survive serialization round-trip"""
+    cin = CellInput(cut_off_energy=300, header=["A comment"], units={"lattice_cart": "ang"})
+    cin["lattice_cart"] = Block(["4 0 0", "0 4 0", "0 0 4"])
+    sdict = cin.as_dict()
+    cin_2 = CellInput.from_dict(sdict)
+    assert cin_2.header == ["A comment"]
+    assert cin_2.units == {"lattice_cart": "ang"}
+
+
+def test_init_with_positional_dict():
+    """Test that CastepInput accepts a positional dict for backward compat"""
+    d = {"cut_off_energy": 300, "task": "singlepoint"}
+    cin = CastepInput(d)
+    assert cin["cut_off_energy"] == 300
+    assert cin["task"] == "singlepoint"
+
+
+def test_get_cell_from_abc(tmpdir):
+    """Test get_cell using lattice_abc format"""
+    cell_content = """\
+%BLOCK LATTICE_ABC
+4 4 4 90 90 90
+%ENDBLOCK LATTICE_ABC
+
+%BLOCK POSITIONS_FRAC
+O 0.0 0.0 0.0
+O 0.5 0.5 0.5
+%ENDBLOCK POSITIONS_FRAC
+"""
+    fname = str(tmpdir.join("test.cell"))
+    with open(fname, "w") as f:
+        f.write(cell_content)
+    cin = CellInput.from_file(fname)
+    expected = [[4, 0, 0], [0, 4, 0], [0, 0, 4]]
+    assert np.allclose(cin.get_cell(), expected)
+
+
+def test_get_positions_frac(tmpdir):
+    """Test get_positions with fractional positions converted to Cartesian"""
+    cell_content = """\
+%BLOCK LATTICE_CART
+4 0 0
+0 4 0
+0 0 4
+%ENDBLOCK LATTICE_CART
+
+%BLOCK POSITIONS_FRAC
+O 0.0 0.0 0.0
+O 0.5 0.5 0.5
+%ENDBLOCK POSITIONS_FRAC
+"""
+    fname = str(tmpdir.join("test.cell"))
+    with open(fname, "w") as f:
+        f.write(cell_content)
+    cin = CellInput.from_file(fname)
+    elems, pos, _ = cin.get_positions()
+    assert elems == ["O", "O"]
+    assert np.allclose(pos[0], [0, 0, 0])
+    assert np.allclose(pos[1], [2, 2, 2])
+
+
+def test_get_positions_no_positions(cell_input):
+    """Test that get_positions raises when no positions are defined"""
+    with pytest.raises(RuntimeError, match="No positions defined"):
+        cell_input.get_positions()
+
+
+def test_parse_pos_line_invalid():
+    """Test that parse_pos_line raises on malformed input"""
+    with pytest.raises(ValueError, match="Cannot understand line"):
+        parse_pos_line("badline")
+
+
+def test_write_lattice_cart_with_units():
+    """Test that self.units adds unit lines to lattice_cart block output"""
+    cin = CellInput()
+    cin.units["lattice_cart"] = "ang"
+    cin.set_cell([[4, 0, 0], [0, 4, 0], [0, 0, 4]])
+    lines = cin.get_file_lines()
+    # %BLOCK lattice_cart, then unit line, then 3 vector lines
+    block_start = next(i for i, ln in enumerate(lines) if ln.startswith("%BLOCK"))
+    assert lines[block_start + 1] == "ang"
+    assert lines[block_start + 2].strip().split() == [
+        "4.0000000000",
+        "0.0000000000",
+        "0.0000000000",
+    ]
+
+
+def test_write_positions_abs_with_units():
+    """Test that self.units adds unit lines to positions_abs block output"""
+    cin = CellInput()
+    cin.units["positions_abs"] = "ang"
+    cin.set_positions(["O", "Ce"], [[1, 1, 1], [2, 2, 2]])
+    lines = cin.get_file_lines()
+    block_start = next(i for i, ln in enumerate(lines) if ln.startswith("%BLOCK"))
+    assert lines[block_start + 1] == "ang"
+
+
+def test_read_lattice_abc_with_units(tmpdir):
+    """Test reading lattice_abc block with a unit line"""
+    cell_content = """\
+%BLOCK LATTICE_ABC
+ang
+4 4 4
+90 90 90
+%ENDBLOCK LATTICE_ABC
+"""
+    fname = str(tmpdir.join("test.cell"))
+    with open(fname, "w") as f:
+        f.write(cell_content)
+    cin = CellInput.from_file(fname)
+    expected = [[4, 0, 0], [0, 4, 0], [0, 0, 4]]
+    assert np.allclose(cin.get_cell(), expected)
+
+
+def test_round_trip_lattice_cart_with_units(tmpdir):
+    """Test round-trip of lattice_cart with units: read → write → read"""
+    cell_content = """\
+%BLOCK LATTICE_CART
+ang
+4 0 0
+0 4 0
+0 0 4
+%ENDBLOCK LATTICE_CART
+
+%BLOCK POSITIONS_ABS
+O 1 1 1
+Ce 2 2 2
+%ENDBLOCK POSITIONS_ABS
+"""
+    fname = str(tmpdir.join("test.cell"))
+    with open(fname, "w") as f:
+        f.write(cell_content)
+    cin = CellInput.from_file(fname)
+
+    # Write back and read again
+    fname2 = str(tmpdir.join("test2.cell"))
+    cin.save(fname2)
+    cin2 = CellInput.from_file(fname2)
+
+    assert np.allclose(cin2.get_cell(), [[4, 0, 0], [0, 4, 0], [0, 0, 4]])
+    elems, pos, _ = cin2.get_positions()
+    assert elems == ["O", "Ce"]
+    assert np.allclose(pos, [[1, 1, 1], [2, 2, 2]])
+
+
+def test_round_trip_positions_with_units(tmpdir):
+    """Test round-trip of positions_abs with units: read → write → read"""
+    cell_content = """\
+%BLOCK LATTICE_CART
+4 0 0
+0 4 0
+0 0 4
+%ENDBLOCK LATTICE_CART
+
+%BLOCK POSITIONS_ABS
+bohr
+O 1 1 1
+Ce 2 2 2
+%ENDBLOCK POSITIONS_ABS
+"""
+    fname = str(tmpdir.join("test.cell"))
+    with open(fname, "w") as f:
+        f.write(cell_content)
+    cin = CellInput.from_file(fname)
+
+    fname2 = str(tmpdir.join("test2.cell"))
+    cin.save(fname2)
+    cin2 = CellInput.from_file(fname2)
+
+    elems, pos, _ = cin2.get_positions()
+    assert elems == ["O", "Ce"]
+    assert np.allclose(pos, [[1, 1, 1], [2, 2, 2]])

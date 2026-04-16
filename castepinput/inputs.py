@@ -29,9 +29,12 @@ class CastepInput(MSONable, UserDict):
     * ``units`` a dictionary of the units
     """
 
-    def __init__(self, header=None, units=None, **kwargs):
+    def __init__(self, *args, header=None, units=None, **kwargs):
         """Instantiate the object"""
-        super().__init__(**kwargs)
+        if args and isinstance(args[0], dict):
+            super().__init__(args[0], **kwargs)
+        else:
+            super().__init__(*args, **kwargs)
         self.header = list(header) if header else []
         self.units = dict(units) if units else {}
         # This makes Monty's default as_dict() work as it looks for this attribute

@@ -41,3 +41,8 @@ def test_abc_to_cell():
     assert get_ang(va, vb) == np.pi / 3
     assert get_ang(vc, vb) == np.pi / 3
     assert get_ang(va, vc) == np.pi / 3
+
+    # Test gamma = -90 branch
+    abc = [1, 1, 1, 90.0, 90.0, -90.0]
+    cell = common.cell_abcs_to_vec(abc)
+    assert cell[1, 1] < 0  # sin(-90) is negative
